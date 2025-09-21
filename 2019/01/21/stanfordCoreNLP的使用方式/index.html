@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha256-dABdfBfUoC8vJUBOwGVdm8L9qlMWaHTIfXt+7GnZCIo=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"yoursite.com","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.23.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="#使用Standford Core NLP的几种方法 stanford corenlp 2018-02-27java环境： 1.8 64位 因为斯坦福corenlp最新版都推荐使用服务器来运行，且nltk包不在支持，直接调用会出现一些问题，建议使用服务器来使用  ##1 使用Core nlp服务器，在来连接服务器  创建Core nlp服务器   在命令行中进入corenlp文件所在位置，输入开启">
+<meta property="og:type" content="article">
+<meta property="og:title" content="stanfordCoreNLP的使用方式">
+<meta property="og:url" content="http://yoursite.com/2019/01/21/stanfordCoreNLP%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F/index.html">
+<meta property="og:site_name" content="三十而立的博客">
+<meta property="og:description" content="#使用Standford Core NLP的几种方法 stanford corenlp 2018-02-27java环境： 1.8 64位 因为斯坦福corenlp最新版都推荐使用服务器来运行，且nltk包不在支持，直接调用会出现一些问题，建议使用服务器来使用  ##1 使用Core nlp服务器，在来连接服务器  创建Core nlp服务器   在命令行中进入corenlp文件所在位置，输入开启">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-01-21T09:09:10.000Z">
+<meta property="article:modified_time" content="2025-09-21T15:32:32.731Z">
+<meta property="article:author" content="三十而立">
+<meta property="article:tag" content="stanford">
+<meta property="article:tag" content="自然语言处理">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://yoursite.com/2019/01/21/stanfordCoreNLP%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://yoursite.com/2019/01/21/stanfordCoreNLP%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F/","path":"2019/01/21/stanfordCoreNLP的使用方式/","title":"stanfordCoreNLP的使用方式"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>stanfordCoreNLP的使用方式 | 三十而立的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="https://cdnjs.cloudflare.com/ajax/libs/ribbon.js/1.0.2/ribbon.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/rss2.xml" title="三十而立的博客" type="application/rss+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">三十而立的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">人生苦短</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">26</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">14</span></a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">20</span></a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E4%B8%8D%E4%BD%BF%E7%94%A8%E6%9C%8D%E5%8A%A1%E5%99%A8%EF%BC%88%E4%B8%8D%E6%8E%A8%E8%8D%90%EF%BC%8C%E4%BB%A5%E4%B8%8D%E6%9B%B4%E6%96%B0%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">2 不使用服务器（不推荐，以不更新）</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="三十而立"
+      src="/uploads/image.png">
+  <p class="site-author-name" itemprop="name">三十而立</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">20</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/BARKTEGH" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;BARKTEGH" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/21/stanfordCoreNLP%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/image.png">
+      <meta itemprop="name" content="三十而立">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="三十而立的博客">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="stanfordCoreNLP的使用方式 | 三十而立的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          stanfordCoreNLP的使用方式
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-01-21 17:09:10" itemprop="dateCreated datePublished" datetime="2019-01-21T17:09:10+08:00">2019-01-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-09-21 23:32:32" itemprop="dateModified" datetime="2025-09-21T23:32:32+08:00">2025-09-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/python/" itemprop="url" rel="index"><span itemprop="name">python</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/python/%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/" itemprop="url" rel="index"><span itemprop="name">自然语言处理</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>709</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>3 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>#使用Standford Core NLP的几种方法</p>
+<p>stanford corenlp 2018-02-27<br>java环境： 1.8 64位</p>
+<p>因为斯坦福corenlp最新版都推荐使用服务器来运行，且nltk包不在支持，直接调用会出现一些问题，建议使用服务器来使用</p>
+<hr>
+<p>##1 使用Core nlp服务器，在来连接服务器</p>
+<ul>
+<li><p>创建Core nlp服务器</p>
+<p>  在命令行中进入corenlp文件所在位置，输入开启服务器命令</p>
+<pre><code>  e:
+  cd E:\corenlp\stanford-corenlp-full-2018-02-27 
+  java -mx4g -cp &quot;*&quot; edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 15000
+</code></pre>
+</li>
+<li><p>使用nltk（3.3v以上）包连接服务器<br>  API网址：<a href="https://www.nltk.org/_modules/nltk/parse/corenlp.html">https://www.nltk.org/_modules/nltk/parse/corenlp.html</a><br>  &gt;&gt;&gt; from nltk.parse import CoreNLPParser<br><br>  # Lexical Parser<br>  &gt;&gt;&gt; parser &#x3D; CoreNLPParser(url&#x3D;’<a href="http://localhost:9000/">http://localhost:9000</a>‘)<br><br>  # Parse tokenized text.<br>  &gt;&gt;&gt; list(parser.parse(‘What is the airspeed of an unladen swallow ?’.split()))<br>  [Tree(‘ROOT’, [Tree(‘SBARQ’, [Tree(‘WHNP’, [Tree(‘WP’, [‘What’])]), Tree(‘SQ’, [Tree(‘VBZ’, [‘is’]), Tree(‘NP’, [Tree(‘NP’, [Tree(‘DT’, [‘the’]), Tree(‘NN’, [‘airspeed’])]), Tree(‘PP’, [Tree(‘IN’, [‘of’]), Tree(‘NP’, [Tree(‘DT’, [‘an’]), Tree(‘JJ’, [‘unladen’])])]), Tree(‘S’, [Tree(‘VP’, [Tree(‘VB’, [‘swallow’])])])])]), Tree(‘.’, [‘?’])])])]<br><br>  # Parse raw string.<br>  &gt;&gt;&gt; list(parser.raw_parse(‘What is the airspeed of an unladen swallow ?’))<br>  [Tree(‘ROOT’, [Tree(‘SBARQ’, [Tree(‘WHNP’, [Tree(‘WP’, [‘What’])]), Tree(‘SQ’, [Tree(‘VBZ’, [‘is’]), Tree(‘NP’, [Tree(‘NP’, [Tree(‘DT’, [‘the’]), Tree(‘NN’, [‘airspeed’])]), Tree(‘PP’, [Tree(‘IN’, [‘of’]), Tree(‘NP’, [Tree(‘DT’, [‘an’]), Tree(‘JJ’, [‘unladen’])])]), Tree(‘S’, [Tree(‘VP’, [Tree(‘VB’, [‘swallow’])])])])]), Tree(‘.’, [‘?’])])])]<br><br>  # Neural Dependency Parser<br>  &gt;&gt;&gt; from nltk.parse.corenlp import CoreNLPDependencyParser<br>  &gt;&gt;&gt; dep_parser &#x3D; CoreNLPDependencyParser(url&#x3D;’<a href="http://localhost:9000/">http://localhost:9000</a>‘)<br>  &gt;&gt;&gt; parses &#x3D; dep_parser.parse(‘What is the airspeed of an unladen swallow ?’.split())<br>  &gt;&gt;&gt; [[(governor, dep, dependent) for governor, dep, dependent in parse.triples()] for parse in parses]<br>  [[((‘What’, ‘WP’), ‘cop’, (‘is’, ‘VBZ’)), ((‘What’, ‘WP’), ‘nsubj’, (‘airspeed’, ‘NN’)), ((‘airspeed’, ‘NN’), ‘det’, (‘the’, ‘DT’)), ((‘airspeed’, ‘NN’), ‘nmod’, (‘swallow’, ‘VB’)), ((‘swallow’, ‘VB’), ‘case’, (‘of’, ‘IN’)), ((‘swallow’, ‘VB’), ‘det’, (‘an’, ‘DT’)), ((‘swallow’, ‘VB’), ‘amod’, (‘unladen’, ‘JJ’)), ((‘What’, ‘WP’), ‘punct’, (‘?’, ‘.’))]]<br><br><br>  # Tokenizer 分词<br>  &gt;&gt;&gt; parser &#x3D; CoreNLPParser(url&#x3D;’<a href="http://localhost:9000/">http://localhost:9000</a>‘)<br>  &gt;&gt;&gt; list(parser.tokenize(‘What is the airspeed of an unladen swallow?’))<br>  [‘What’, ‘is’, ‘the’, ‘airspeed’, ‘of’, ‘an’, ‘unladen’, ‘swallow’, ‘?’]<br><br>  # POS Tagger 词性标注<br>  &gt;&gt;&gt; pos_tagger &#x3D; CoreNLPParser(url&#x3D;’<a href="http://localhost:9000/">http://localhost:9000</a>‘, tagtype&#x3D;’pos’)<br>  &gt;&gt;&gt; list(pos_tagger.tag(‘What is the airspeed of an unladen swallow ?’.split()))<br>  [(‘What’, ‘WP’), (‘is’, ‘VBZ’), (‘the’, ‘DT’), (‘airspeed’, ‘NN’), (‘of’, ‘IN’), (‘an’, ‘DT’), (‘unladen’, ‘JJ’), (‘swallow’, ‘VB’), (‘?’, ‘.’)]<br><br>  # NER Tagger 命名实体识别<br>  &gt;&gt;&gt; ner_tagger &#x3D; CoreNLPParser(url&#x3D;’<a href="http://localhost:9000/">http://localhost:9000</a>‘, tagtype&#x3D;’ner’)<br>  &gt;&gt;&gt; list(ner_tagger.tag((‘Rami Eid is studying at Stony Brook University in NY’.split())))<br>  [(‘Rami’, ‘PERSON’), (‘Eid’, ‘PERSON’), (‘is’, ‘O’), (‘studying’, ‘O’), (‘at’, ‘O’), (‘Stony’, ‘ORGANIZATION’), (‘Brook’, ‘ORGANIZATION’), (‘University’, ‘ORGANIZATION’), (‘in’, ‘O’), (‘NY’, ‘STATE_OR_PROVINCE’)]</p>
+</li>
+<li><p>或者使用from stanfordcorenlp import StanfordCoreNLP，网址为<a href="https://github.com/Lynten/stanford-corenlp">https://github.com/Lynten/stanford-corenlp</a><br>  nlp &#x3D; StanfordCoreNLP(‘<a href="http://localhost/">http://localhost</a>‘, port&#x3D;9000)<br>  # 常用api<br>  print ‘Tokenize:’, nlp.word_tokenize(sentence)<br>  print ‘Part of Speech:’, nlp.pos_tag(sentence)<br>  print ‘Named Entities:’, nlp.ner(sentence)<br>  print ‘Constituency Parsing:’, nlp.parse(sentence)<br>  print ‘Dependency Parsing:’, nlp.dependency_parse(sentence)<br><br>  # 一般的<br>  # annotators: tokenize, ssplit, pos, lemma, ner, parse, depparse, dcoref (See Detail)<br><br>  # pipelineLanguage: en, zh, ar, fr, de, es (English, Chinese, Arabic, French, German, Spanish) (See Annotator Support Detail)<br><br>  # outputFormat: json, xml, text<br>  props &#x3D; {‘annotators’: ‘tokenize, ssplit, ner, depparse’, ‘pipelineLanguage’: ‘en’, ‘outputFormat’: ‘json’}<br>  ParseResult &#x3D; nlp.annotate(raw_sent, properties&#x3D;props)<br><br><br>  nlp.close（）＃别忘了关闭！后端服务器将消耗大量的memery。</p>
+</li>
+</ul>
+<h2 id="2-不使用服务器（不推荐，以不更新）"><a href="#2-不使用服务器（不推荐，以不更新）" class="headerlink" title="2 不使用服务器（不推荐，以不更新）"></a>2 不使用服务器（不推荐，以不更新）</h2><p>使用nltk直接调用包<br>2018-12-28测试发现侧方法会出现utf8解析问题，暂时无法解决，推荐使用上面的方法。<br>    # java路径，需要修改<br>    java_path &#x3D; “C:\Program Files\Java\jre1.8.0_191\bin\java.exe”<br>    os.environ[‘JAVA_HOME’] &#x3D; java_path<br>    os.environ[“STANFORD_PARSER”] &#x3D; Utils.get_project_path()+”\lib_data\stanford-parser-full-2018-02-27\stanford-parser.jar”<br>    os.environ[“STANFORD_MODELS”] &#x3D; Utils.get_project_path()+”\lib_data\stanford-parser-full-2018-02-27\stanford-parser-3.9.1-models.jar”</p>
+<pre><code>self.sent_parser = stanford.StanfordParser(
+                             model_path=&quot;edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz&quot;,
+                           java_options=&#39;-mx8g&#39;,
+                            encoding=&#39;utf8&#39;)  #&#39;-mlength100&#39;
+t1 = list(self.sent_parser.parse((senten,))
+</code></pre>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/stanford/" rel="tag"># stanford</a>
+              <a href="/tags/%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/" rel="tag"># 自然语言处理</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/01/21/spring%E8%A3%85%E9%85%8D/" rel="prev" title="spring装配">
+                  <i class="fa fa-angle-left"></i> spring装配
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/03/02/hashMap/" rel="next" title="HashMap详解">
+                  HashMap详解 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">三十而立</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">61k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">3:40</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+</body>
+</html>

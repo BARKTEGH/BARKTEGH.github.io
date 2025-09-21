@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha256-dABdfBfUoC8vJUBOwGVdm8L9qlMWaHTIfXt+7GnZCIo=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"yoursite.com","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.23.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="Spring装配Bean Spring容器配置的三种主要的装配机制：   在XML中进行显示配置 在Java中进行显式配置 隐式的bean发现机制和自动装配   1-自动装配Spring从两个角度实现自动化装配：   组件扫描（component scanning） 自动发现应用上下文中所创建的bean 自动装配（autowiring） Spring自动满足bean之间的依赖     使用@Com">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spring装配">
+<meta property="og:url" content="http://yoursite.com/2019/01/21/spring%E8%A3%85%E9%85%8D/index.html">
+<meta property="og:site_name" content="三十而立的博客">
+<meta property="og:description" content="Spring装配Bean Spring容器配置的三种主要的装配机制：   在XML中进行显示配置 在Java中进行显式配置 隐式的bean发现机制和自动装配   1-自动装配Spring从两个角度实现自动化装配：   组件扫描（component scanning） 自动发现应用上下文中所创建的bean 自动装配（autowiring） Spring自动满足bean之间的依赖     使用@Com">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-01-21T09:05:13.000Z">
+<meta property="article:modified_time" content="2025-09-21T15:32:32.730Z">
+<meta property="article:author" content="三十而立">
+<meta property="article:tag" content="spring">
+<meta property="article:tag" content="java">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://yoursite.com/2019/01/21/spring%E8%A3%85%E9%85%8D/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://yoursite.com/2019/01/21/spring%E8%A3%85%E9%85%8D/","path":"2019/01/21/spring装配/","title":"spring装配"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>spring装配 | 三十而立的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="https://cdnjs.cloudflare.com/ajax/libs/ribbon.js/1.0.2/ribbon.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/rss2.xml" title="三十而立的博客" type="application/rss+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">三十而立的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">人生苦短</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">26</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">14</span></a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">20</span></a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Spring%E8%A3%85%E9%85%8DBean"><span class="nav-number">1.</span> <span class="nav-text">Spring装配Bean</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D"><span class="nav-number">1.1.</span> <span class="nav-text">1-自动装配</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-JAVA%E4%BB%A3%E7%A0%81%E8%A3%85%E9%85%8DBean"><span class="nav-number">1.2.</span> <span class="nav-text">2- JAVA代码装配Bean</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E9%80%9A%E8%BF%87XML%E8%A3%85%E9%85%8Dbean"><span class="nav-number">1.3.</span> <span class="nav-text">3- 通过XML装配bean</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E6%B7%B7%E5%90%88%E9%85%8D%E7%BD%AE"><span class="nav-number">1.4.</span> <span class="nav-text">4-混合配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E7%8E%AF%E5%A2%83%E4%B8%8Eprofile"><span class="nav-number">1.5.</span> <span class="nav-text">1- 环境与profile</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="三十而立"
+      src="/uploads/image.png">
+  <p class="site-author-name" itemprop="name">三十而立</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">20</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/BARKTEGH" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;BARKTEGH" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/21/spring%E8%A3%85%E9%85%8D/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/image.png">
+      <meta itemprop="name" content="三十而立">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="三十而立的博客">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="spring装配 | 三十而立的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          spring装配
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-01-21 17:05:13" itemprop="dateCreated datePublished" datetime="2019-01-21T17:05:13+08:00">2019-01-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-09-21 23:32:32" itemprop="dateModified" datetime="2025-09-21T23:32:32+08:00">2025-09-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>719</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>3 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="Spring装配Bean"><a href="#Spring装配Bean" class="headerlink" title="Spring装配Bean"></a>Spring装配Bean</h2><hr>
+<p>Spring容器配置的三种主要的装配机制：</p>
+<blockquote>
+<ul>
+<li>在XML中进行显示配置</li>
+<li>在Java中进行显式配置</li>
+<li>隐式的bean发现机制和自动装配</li>
+</ul>
+</blockquote>
+<h3 id="1-自动装配"><a href="#1-自动装配" class="headerlink" title="1-自动装配"></a>1-自动装配</h3><p>Spring从两个角度实现自动化装配：</p>
+<blockquote>
+<ul>
+<li>组件扫描（component scanning） 自动发现应用上下文中所创建的bean</li>
+<li>自动装配（autowiring） Spring自动满足bean之间的依赖</li>
+</ul>
+</blockquote>
+<p>  使用@Component注解来告诉Spring为这个类创建bean</p>
+<pre><code>@Component
+public class CDPlayer implements MediaPlayer &#123;
+  private CompactDisc cd;
+
+  @Autowired
+  public CDPlayer(CompactDisc cd) &#123;
+    this.cd = cd;
+  &#125;
+
+  public void play() &#123;
+    cd.play();
+  &#125;
+
+&#125;
+</code></pre>
+<p>通过设置组件扫描可以不用显示配置bean。但是组件扫描默认是不启用的。所以要通过配置来启用。</p>
+<ul>
+<li><p>在java配置类中开启组件扫描@ComponentScan</p>
+<pre><code>  @Configuration
+  @ComponentScan
+  public class CDPlayerConfig &#123; 
+  &#125;
+</code></pre>
+</li>
+</ul>
+<p>因为@ComponentScan会扫描与配置类相同的包。可以通过下面两个配置来设置扫描的包：</p>
+<blockquote>
+<ul>
+<li>@ComponentScan(basePackages&#x3D;{“soundsystem,”sdd”})<blockquote>
+<p>扫描包的名字</p>
+</blockquote>
+</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>@ComponentScan(basePackageClasses&#x3D;{CDplayer.class,DVDPlayer.class})<blockquote>
+<p>扫描类所在的包</p>
+</blockquote>
+</li>
+</ul>
+</blockquote>
+<ul>
+<li><p>在XML中开启组件扫描</p>
+<pre><code>  &lt;context:component-scan base-package=&quot;soundsystem&quot; /&gt;
+</code></pre>
+</li>
+<li><p>为组件扫描的bean命名</p>
+<blockquote>
+<ul>
+<li>通过@Component注解</li>
+</ul>
+</blockquote>
+<p>  @Component(“sgtPerr”)<br>  public class SgtPeppers implements CompactDisc {</p>
+<pre><code>private String title = &quot;Sgt. Pepper&#39;s Lonely Hearts Club Band&quot;;  
+private String artist = &quot;The Beatles&quot;;
+
+public void play() &#123;
+  System.out.println(&quot;Playing &quot; + title + &quot; by &quot; + artist);
+&#125;
+</code></pre>
+<p>  }</p>
+</li>
+</ul>
+<blockquote>
+<ul>
+<li>通过@Named注解</li>
+</ul>
+</blockquote>
+<pre><code>@Named(&quot;sgtPerr&quot;)
+public class SgtPeppers implements CompactDisc &#123;
+
+&#125;
+</code></pre>
+<h3 id="2-JAVA代码装配Bean"><a href="#2-JAVA代码装配Bean" class="headerlink" title="2- JAVA代码装配Bean"></a>2- JAVA代码装配Bean</h3><p>通过配置类来实现装配Bean</p>
+<pre><code>@Configuration //表明这是一个配置类
+public class CDPlayerConfig &#123;
+  
+  @Bean //声明这是一个bean
+  public CompactDisc compactDisc() &#123;
+    return new SgtPeppers();
+  &#125;
+
+  @Bean
+    //通过构造器注入
+  public CDPlayer cdPlayer(CompactDisc compactDisc) &#123;
+    return new CDPlayer(compactDisc);
+  &#125;
+
+  @Bean 
+    //通过setter方法注入
+  public CDPlayer cdPlayer(CompactDisc compactDisc) &#123;
+    CDPlayer cdPlayer = new CDPlayer(compactDisc);
+    cdPlayer.setCompactDisc(compactDisc);
+    return cdPlayer
+  &#125;
+
+&#125;
+</code></pre>
+<h3 id="3-通过XML装配bean"><a href="#3-通过XML装配bean" class="headerlink" title="3- 通过XML装配bean"></a>3- 通过XML装配bean</h3><blockquote>
+<ul>
+<li>通过构造器注入</li>
+</ul>
+</blockquote>
+<pre><code>&lt;bean id=&quot;compactDisc&quot; class=&quot;soundsystem.collections.BlankDisc&quot;&gt;
+    &lt;constructor-arg value=&quot;Sgt. Pepper&#39;s Lonely Hearts Club Band&quot; /&gt;
+    &lt;constructor-arg value=&quot;The Beatles&quot; /&gt;
+    &lt;constructor-arg&gt;
+      &lt;list&gt;
+        &lt;value&gt;Sgt. Pepper&#39;s Lonely Hearts Club Band&lt;/value&gt;
+        &lt;value&gt;With a Little Help from My Friends&lt;/value&gt;
+        &lt;value&gt;Lucy in the Sky with Diamonds&lt;/value&gt;
+        &lt;value&gt;Getting Better&lt;/value&gt;
+        &lt;value&gt;Fixing a Hole&lt;/value&gt;
+        &lt;value&gt;She&#39;s Leaving Home&lt;/value&gt;
+        &lt;value&gt;Being for the Benefit of Mr. Kite!&lt;/value&gt;
+        &lt;value&gt;Within You Without You&lt;/value&gt;
+        &lt;value&gt;When I&#39;m Sixty-Four&lt;/value&gt;
+        &lt;value&gt;Lovely Rita&lt;/value&gt;
+        &lt;value&gt;Good Morning Good Morning&lt;/value&gt;
+        &lt;value&gt;Sgt. Pepper&#39;s Lonely Hearts Club Band (Reprise)&lt;/value&gt;
+        &lt;value&gt;A Day in the Life&lt;/value&gt;
+      &lt;/list&gt;
+    &lt;/constructor-arg&gt;
+  &lt;/bean&gt;
+</code></pre>
+<blockquote>
+<ul>
+<li>通过setter注入</li>
+</ul>
+</blockquote>
+<pre><code> &lt;bean id=&quot;compactDisc&quot;
+    class=&quot;soundsystem.properties.BlankDisc&quot;&gt;
+    &lt;property name=&quot;title&quot; value=&quot;Sgt. Pepper&#39;s Lonely Hearts Club Band&quot; /&gt;
+    &lt;property name=&quot;artist&quot; value=&quot;The Beatles&quot; /&gt;
+    &lt;property name=&quot;tracks&quot;&gt;
+      &lt;list&gt;
+        &lt;value&gt;Sgt. Pepper&#39;s Lonely Hearts Club Band&lt;/value&gt;
+        &lt;value&gt;With a Little Help from My Friends&lt;/value&gt;
+        &lt;value&gt;Lucy in the Sky with Diamonds&lt;/value&gt;
+        &lt;value&gt;Getting Better&lt;/value&gt;
+        &lt;value&gt;Fixing a Hole&lt;/value&gt;
+        &lt;value&gt;She&#39;s Leaving Home&lt;/value&gt;
+        &lt;value&gt;Being for the Benefit of Mr. Kite!&lt;/value&gt;
+        &lt;value&gt;Within You Without You&lt;/value&gt;
+        &lt;value&gt;When I&#39;m Sixty-Four&lt;/value&gt;
+        &lt;value&gt;Lovely Rita&lt;/value&gt;
+        &lt;value&gt;Good Morning Good Morning&lt;/value&gt;
+        &lt;value&gt;Sgt. Pepper&#39;s Lonely Hearts Club Band (Reprise)&lt;/value&gt;
+        &lt;value&gt;A Day in the Life&lt;/value&gt;
+      &lt;/list&gt;
+    &lt;/property&gt;
+  &lt;/bean&gt;
+</code></pre>
+<h3 id="4-混合配置"><a href="#4-混合配置" class="headerlink" title="4-混合配置"></a>4-混合配置</h3><ul>
+<li><p>在javaConfig引用xml配置</p>
+<pre><code>  @Configuration
+  @Import(CDPlayerConfig.class) //导入其他的java配置
+  @ImportResource(&quot;classpath:cd-config.xml&quot;) // 导入xml配置
+  public class SoundSystemConfig &#123;
+  
+  &#125;
+</code></pre>
+</li>
+<li><p>在xml配置中引用javaconfig</p>
+<pre><code>  &lt;bean class=&quot;soundsystem.CDConfig&quot; /&gt; 导入config配置类
+  &lt;import resource=&quot;cd-player-config.xml&quot;/&gt; 导入xml配置
+</code></pre>
+</li>
+</ul>
+<hr>
+<p>##高级装配</p>
+<h3 id="1-环境与profile"><a href="#1-环境与profile" class="headerlink" title="1- 环境与profile"></a>1- 环境与profile</h3>
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/spring/" rel="tag"># spring</a>
+              <a href="/tags/java/" rel="tag"># java</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/01/21/java%E5%A4%9A%E7%BA%BF%E7%A8%8B/" rel="prev" title="java多线程">
+                  <i class="fa fa-angle-left"></i> java多线程
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/01/21/stanfordCoreNLP%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F/" rel="next" title="stanfordCoreNLP的使用方式">
+                  stanfordCoreNLP的使用方式 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">三十而立</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">61k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">3:40</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+</body>
+</html>

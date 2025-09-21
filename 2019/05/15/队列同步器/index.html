@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha256-dABdfBfUoC8vJUBOwGVdm8L9qlMWaHTIfXt+7GnZCIo=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"yoursite.com","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.23.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="队列同步器队列同步器AbstractQueuedSynchronizer（以下简称同步器），是用来构建锁或者其他同步组件的基础框架，它使用了一个int成员变量表示同步状态，通过内置的FIFO队列来完成资源获取线程的排队工作。 同步器的主要使用方式是继承，子类通过继承同步器并实现它的抽象方法来管理同步状态，在抽象方法的实现过程中免不了要对同步状态进行更改，这时就需要使用同步器提供的3个方法（getS">
+<meta property="og:type" content="article">
+<meta property="og:title" content="队列同步器">
+<meta property="og:url" content="http://yoursite.com/2019/05/15/%E9%98%9F%E5%88%97%E5%90%8C%E6%AD%A5%E5%99%A8/index.html">
+<meta property="og:site_name" content="三十而立的博客">
+<meta property="og:description" content="队列同步器队列同步器AbstractQueuedSynchronizer（以下简称同步器），是用来构建锁或者其他同步组件的基础框架，它使用了一个int成员变量表示同步状态，通过内置的FIFO队列来完成资源获取线程的排队工作。 同步器的主要使用方式是继承，子类通过继承同步器并实现它的抽象方法来管理同步状态，在抽象方法的实现过程中免不了要对同步状态进行更改，这时就需要使用同步器提供的3个方法（getS">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20181123105140.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20181123105200.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614200946.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614201218.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614201543.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614203038.png">
+<meta property="article:published_time" content="2019-05-15T11:03:20.000Z">
+<meta property="article:modified_time" content="2025-09-21T15:32:32.734Z">
+<meta property="article:author" content="三十而立">
+<meta property="article:tag" content="java多线程">
+<meta property="article:tag" content="队列同步器">
+<meta property="article:tag" content="lock">
+<meta property="article:tag" content="AQS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20181123105140.png">
+
+
+<link rel="canonical" href="http://yoursite.com/2019/05/15/%E9%98%9F%E5%88%97%E5%90%8C%E6%AD%A5%E5%99%A8/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://yoursite.com/2019/05/15/%E9%98%9F%E5%88%97%E5%90%8C%E6%AD%A5%E5%99%A8/","path":"2019/05/15/队列同步器/","title":"队列同步器"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>队列同步器 | 三十而立的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="https://cdnjs.cloudflare.com/ajax/libs/ribbon.js/1.0.2/ribbon.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/rss2.xml" title="三十而立的博客" type="application/rss+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">三十而立的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">人生苦短</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">26</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">14</span></a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">20</span></a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%98%9F%E5%88%97%E5%90%8C%E6%AD%A5%E5%99%A8"><span class="nav-number">1.</span> <span class="nav-text">队列同步器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%98%9F%E5%88%97%E5%90%8C%E6%AD%A5%E5%99%A8%E7%9A%84%E6%8E%A5%E5%8F%A3%E4%B8%8E%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.</span> <span class="nav-text">队列同步器的接口与示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%98%9F%E5%88%97%E5%90%8C%E6%AD%A5%E5%99%A8%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90"><span class="nav-number">3.</span> <span class="nav-text">队列同步器的实现分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E9%98%9F%E5%88%97"><span class="nav-number">3.1.</span> <span class="nav-text">同步队列</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8B%AC%E5%8D%A0%E5%BC%8F%E5%90%8C%E6%AD%A5%E7%8A%B6%E6%80%81%E8%8E%B7%E5%8F%96%E4%B8%8E%E9%87%8A%E6%94%BE"><span class="nav-number">3.2.</span> <span class="nav-text">独占式同步状态获取与释放</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%BC%8F%E5%90%8C%E6%AD%A5%E7%8A%B6%E6%80%81%E8%8E%B7%E5%8F%96%E4%B8%8E%E9%87%8A%E6%94%BE"><span class="nav-number">3.3.</span> <span class="nav-text">共享式同步状态获取与释放</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8B%AC%E5%8D%A0%E5%BC%8F%E8%B6%85%E6%97%B6%E8%8E%B7%E5%8F%96%E5%90%8C%E6%AD%A5%E7%8A%B6%E6%80%81"><span class="nav-number">3.4.</span> <span class="nav-text">独占式超时获取同步状态</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="三十而立"
+      src="/uploads/image.png">
+  <p class="site-author-name" itemprop="name">三十而立</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">20</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/BARKTEGH" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;BARKTEGH" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/15/%E9%98%9F%E5%88%97%E5%90%8C%E6%AD%A5%E5%99%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/image.png">
+      <meta itemprop="name" content="三十而立">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="三十而立的博客">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="队列同步器 | 三十而立的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          队列同步器
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-05-15 19:03:20" itemprop="dateCreated datePublished" datetime="2019-05-15T19:03:20+08:00">2019-05-15</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-09-21 23:32:32" itemprop="dateModified" datetime="2025-09-21T23:32:32+08:00">2025-09-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>2.7k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>10 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="队列同步器"><a href="#队列同步器" class="headerlink" title="队列同步器"></a>队列同步器</h2><p>队列同步器AbstractQueuedSynchronizer（以下简称同步器），是用来构建锁或者其他同步组<br>件的基础框架，它使用了一个int成员变量表示同步状态，通过内置的FIFO队列来完成资源获<br>取线程的排队工作。</p>
+<p>同步器的主要使用方式是<strong>继承</strong>，子类通过继承同步器并实现它的抽象方法来管理同步状<br>态，在抽象方法的实现过程中免不了要对同步状态进行更改，这时就需要使用同步器提供的3<br>个方法（getState()、setState(int newState)和compareAndSetState(int expect,int update)）来进行操<br>作，因为它们能够保证状态的改变是安全的。子类推荐被定义为自定义同步组件的静态内部<br>类，同步器自身没有实现任何同步接口，它仅仅是定义了若干同步状态获取和释放的方法来<br>供自定义同步组件使用，同步器既可以支持独占式地获取同步状态，也可以支持共享式地获<br>取同步状态，这样就可以方便实现不同类型的同步组件（ReentrantLock、<br>ReentrantReadWriteLock和CountDownLatch等）。</p>
+<h2 id="队列同步器的接口与示例"><a href="#队列同步器的接口与示例" class="headerlink" title="队列同步器的接口与示例"></a>队列同步器的接口与示例</h2><p>同步器的设计是基于模板方法模式的，也就是说，使用者需要继承同步器并重写指定的<br>方法，随后将同步器组合在自定义同步组件的实现中，并调用同步器提供的模板方法，而这些<br>模板方法将会调用使用者重写的方法。</p>
+<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20181123105140.png"></p>
+<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20181123105200.png"></p>
+<p>以下是重写同步器方法实现的一个独占锁。</p>
+<pre><code>class Mutex implements Lock &#123;
+
+    // 静态内部类，自定义同步器
+    private static class Sync extends AbstractQueuedSynchronizer &#123;
+            // 是否处于占用状态
+            protected boolean isHeldExclusively() &#123;
+                return getState() == 1;
+            &#125; 
+
+            // 当状态为0的时候获取锁
+            public boolean tryAcquire(int acquires) &#123;
+                if (compareAndSetState(0, 1)) &#123;
+                    setExclusiveOwnerThread(Thread.currentThread());
+                    return true;
+                &#125;
+                return false;
+            &#125; 
+            // 释放锁，将状态设置为0
+            protected boolean tryRelease(int releases) &#123;
+                if (getState() == 0) throw new  IllegalMonitorStateException();
+                setExclusiveOwnerThread(null);
+                setState(0);
+                return true;
+            &#125; 
+
+            // 返回一个Condition，每个condition都包含了一个condition队列
+            Condition newCondition() &#123; return new ConditionObject(); &#125;
+    &#125; 
+
+    // 仅需要将操作代理到Sync上即可
+    private final Sync sync = new Sync();
+    public void lock() &#123; sync.acquire(1); &#125;
+    public boolean tryLock() &#123; return sync.tryAcquire(1); &#125;
+    public void unlock() &#123; sync.release(1); &#125;
+    public Condition newCondition() &#123; return sync.newCondition(); &#125;
+    public boolean isLocked() &#123; return sync.isHeldExclusively(); &#125;
+    public boolean hasQueuedThreads() &#123; return sync.hasQueuedThreads(); &#125;
+    public void lockInterruptibly() throws InterruptedException &#123;
+        sync.acquireInterruptibly(1);
+    &#125; 
+    public boolean tryLock(long timeout, TimeUnit unit) throws InterruptedException &#123;
+        return sync.tryAcquireNanos(1, unit.toNanos(timeout));
+    &#125;
+&#125;
+</code></pre>
+<h2 id="队列同步器的实现分析"><a href="#队列同步器的实现分析" class="headerlink" title="队列同步器的实现分析"></a>队列同步器的实现分析</h2><h3 id="同步队列"><a href="#同步队列" class="headerlink" title="同步队列"></a>同步队列</h3><p>同步器依赖内部的同步队列（一个FIFO双向队列）来完成同步状态的管理，当前线程获取<br>同步状态失败时，同步器会将当前线程以及等待状态等信息构造成为一个节点（Node）并将其<br>加入同步队列，同时会阻塞当前线程，当同步状态释放时，会把首节点中的线程唤醒，使其再<br>次尝试获取同步状态。</p>
+<p>节点是构成同步队列的基础。<br><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614200946.png"></p>
+<p>同步器拥有首节点（head）<br>和尾节点（tail），没有成功获取同步状态的线程将会成为节点加入该队列的尾部，同步队列的<br>基本结构如图示。</p>
+<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614201218.png"></p>
+<p><em>同步队列在加入尾结点需要cas来保证线程安全，而设置头结点不需要。</em></p>
+<h3 id="独占式同步状态获取与释放"><a href="#独占式同步状态获取与释放" class="headerlink" title="独占式同步状态获取与释放"></a>独占式同步状态获取与释放</h3><p>主要流程为：</p>
+<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614201543.png"></p>
+<p>通过调用同步器的acquire(int arg)方法可以获取同步状态，该方法对中断不敏感，也就是<br>由于线程获取同步状态失败后进入同步队列中，后续对线程进行中断操作时，线程不会从同<br>步队列中移出。</p>
+<pre><code>//同步器的acquire方法
+public final void acquire(int arg) &#123;
+    if (!tryAcquire(arg) &amp;&amp;
+    acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+    selfInterrupt();
+&#125;
+</code></pre>
+<p>代码主要完成了同步状态获取、节点构造、加入同步队列以及在同步队列中自旋等<br>待的相关工作，其主要逻辑是：首先调用自定义同步器实现的tryAcquire(int arg)方法，该方法<br>保证线程安全的获取同步状态，如果同步状态获取失败，则构造同步节点（独占式<br>Node.EXCLUSIVE，同一时刻只能有一个线程成功获取同步状态）并通过addWaiter(Node node)<br>方法将该节点加入到同步队列的尾部，最后调用acquireQueued(Node node,int arg)方法，使得该<br>节点以“死循环”的方式获取同步状态。如果获取不到则阻塞节点中的线程，而被阻塞线程的<br>唤醒主要依靠前驱节点的出队或阻塞线程被中断来实现。</p>
+<pre><code>//同步器的addWaiter和enq方法
+private Node addWaiter(Node mode) &#123;
+    Node node = new Node(Thread.currentThread(), mode);
+    // 快速尝试在尾部添加
+    Node pred = tail;if (pred != null) &#123;
+        node.prev = pred;
+        if (compareAndSetTail(pred, node)) &#123;
+            pred.next = node;
+            return node;
+        &#125;
+    &#125;
+    enq(node);
+    return node;
+&#125;
+private Node enq(final Node node) &#123;
+    for (;;) &#123;
+        Node t = tail;
+        if (t == null) &#123; // Must initialize
+            if (compareAndSetHead(new Node()))
+            tail = head;
+        &#125; else &#123;
+            node.prev = t;
+            if (compareAndSetTail(t, node)) &#123;
+            t.next = node;
+            return t;
+            &#125;
+        &#125;
+    &#125;
+&#125;
+</code></pre>
+<p>当前线程获取同步状态并执行了相应逻辑之后，就需要释放同步状态，使得后续节点能<br>够继续获取同步状态。通过调用同步器的release(int arg)方法可以释放同步状态，该方法在释<br>放了同步状态之后，会唤醒其后继节点（进而使后继节点重新尝试获取同步状态）。</p>
+<pre><code>public final boolean release(int arg) &#123;
+    if (tryRelease(arg)) &#123;
+        Node h = head;
+        if (h != null &amp;&amp; h.waitStatus != 0)
+            unparkSuccessor(h);
+        return true;
+    &#125;
+    return false;
+&#125;
+</code></pre>
+<p>总结：在获取同步状态时，同步器维<br>护一个同步队列，获取状态失败的线程都会被加入到队列中并在队列中进行自旋；移出队列<br>（或停止自旋）的条件是前驱节点为头节点且成功获取了同步状态。在释放同步状态时，同步<br>器调用tryRelease(int arg)方法释放同步状态，然后唤醒头节点的后继节点。</p>
+<h3 id="共享式同步状态获取与释放"><a href="#共享式同步状态获取与释放" class="headerlink" title="共享式同步状态获取与释放"></a>共享式同步状态获取与释放</h3><p>共享式获取与独占式获取最主要的区别在于同一时刻能否有多个线程同时获取到同步状<br>态。</p>
+<p>通过调用同步器的acquireShared(int arg)方法可以共享式地获取同步状态。</p>
+<pre><code>public final void acquireShared(int arg) &#123;
+    if (tryAcquireShared(arg) &lt; 0)
+        doAcquireShared(arg);
+    &#125;
+private void doAcquireShared(int arg) &#123;
+    final Node node = addWaiter(Node.SHARED);
+    boolean failed = true;
+    try &#123;
+        boolean interrupted = false;
+        for (;;) &#123;
+            final Node p = node.predecessor();
+            if (p == head) &#123;
+                int r = tryAcquireShared(arg);
+                if (r &gt;= 0) &#123;
+                    setHeadAndPropagate(node, r);
+                    p.next = null;
+                    if (interrupted)selfInterrupt();
+                    failed = false;
+                    return;
+                &#125;
+            &#125;
+            if (shouldParkAfterFailedAcquire(p, node) &amp;&amp;parkAndCheckInterrupt())
+                interrupted = true;
+        &#125;
+    &#125; finally &#123;
+        if (failed) cancelAcquire(node);
+    &#125;
+&#125;
+</code></pre>
+<p>在acquireShared(int arg)方法中，同步器调用tryAcquireShared(int arg)方法尝试获取同步状<br>态，tryAcquireShared(int arg)方法返回值为int类型，当返回值大于等于0时，表示能够获取到同<br>步状态。因此，在共享式获取的自旋过程中，成功获取到同步状态并退出自旋的条件就是<br>tryAcquireShared(int arg)方法返回值大于等于0。可以看到，在doAcquireShared(int arg)方法的自<br>旋过程中，如果当前节点的前驱为头节点时，尝试获取同步状态，如果返回值大于等于0，表示<br>该次获取同步状态成功并从自旋过程中退出。</p>
+<p>与独占式一样，共享式获取也需要释放同步状态，通过调用releaseShared(int arg)方法可以<br>释放同步状态。方法在释放同步状态之后，将会唤醒后续处于等待状态的节点。对于能够支持多个线<br>程同时访问的并发组件（比如Semaphore），它和独占式主要区别在于tryReleaseShared(int arg)<br>方法必须确保同步状态（或者资源数）线程安全释放，一般是通过循环和CAS来保证的，因为<br>释放同步状态的操作会同时来自多个线程。</p>
+<pre><code>public final boolean releaseShared(int arg) &#123;
+    if (tryReleaseShared(arg)) &#123;
+        doReleaseShared();
+        return true;
+    &#125;
+    return false;
+&#125;
+</code></pre>
+<h3 id="独占式超时获取同步状态"><a href="#独占式超时获取同步状态" class="headerlink" title="独占式超时获取同步状态"></a>独占式超时获取同步状态</h3><p>通过调用同步器的doAcquireNanos(int arg,long nanosTimeout)方法可以超时获取同步状<br>态，即在指定的时间段内获取同步状态，如果获取到同步状态则返回true，否则，返回false。该<br>方法提供了传统Java同步操作（比如synchronized关键字）所不具备的特性。</p>
+<p>超时获取同步状态过程可以被视作响应中断获取同步状态过程的“增强版”，<br>doAcquireNanos(int arg,long nanosTimeout)方法在支持响应中断的基础上，增加了超时获取的<br>特性。针对超时获取，主要需要计算出需要睡眠的时间间隔nanosTimeout，为了防止过早通知，<br>nanosTimeout计算公式为：nanosTimeout-&#x3D;now-lastTime，其中now为当前唤醒时间，lastTime为上<br>次唤醒时间，如果nanosTimeout大于0则表示超时时间未到，需要继续睡眠nanosTimeout纳秒，<br>反之，表示已经超时。</p>
+<pre><code>private boolean doAcquireNanos(int arg, long nanosTimeout)throws InterruptedException &#123;
+    long lastTime = System.nanoTime();
+    final Node node = addWaiter(Node.EXCLUSIVE);
+    boolean failed = true;
+    try &#123;
+        for (;;) &#123;
+            final Node p = node.predecessor();
+            if (p == head &amp;&amp; tryAcquire(arg)) &#123;
+                setHead(node);
+                p.next = null; // help GC
+                failed = false;
+                return true;
+            &#125;
+            if (nanosTimeout &lt;= 0) return false;
+            if (shouldParkAfterFailedAcquire(p, node) &amp;&amp; nanosTimeout &gt; spinForTimeoutThreshold)
+                LockSupport.parkNanos(this, nanosTimeout);
+            long now = System.nanoTime();
+            //计算时间，当前时间now减去睡眠之前的时间lastTime得到已经睡眠
+            //的时间delta，然后被原有超时时间nanosTimeout减去，得到了
+            //还应该睡眠的时间
+            nanosTimeout -= now - lastTime;
+            lastTime = now;
+            if (Thread.interrupted())
+                throw new InterruptedException();
+        &#125;
+    &#125; finally &#123;
+        if (failed) cancelAcquire(node);
+    &#125;
+&#125;
+</code></pre>
+<p>该方法在自旋过程中，当节点的前驱节点为头节点时尝试获取同步状态，如果获取成功<br>则从该方法返回，这个过程和独占式同步获取的过程类似，但是在同步状态获取失败的处理<br>上有所不同。如果当前线程获取同步状态失败，则判断是否超时（nanosTimeout小于等于0表示<br>已经超时），如果没有超时，重新计算超时间隔nanosTimeout，然后使当前线程等待<br>nanosTimeout纳秒（当已到设置的超时时间，该线程会从LockSupport.parkNanos(Object<br>blocker,long nanos)方法返回）。</p>
+<p>如果nanosTimeout小于等于spinForTimeoutThreshold（1000纳秒）时，将不会使该线程进行<br>超时等待，而是进入快速的自旋过程。原因在于，非常短的超时等待无法做到十分精确，如果<br>这时再进行超时等待，相反会让nanosTimeout的超时从整体上表现得反而不精确。因此，在超<br>时非常短的场景下，同步器会进入无条件的快速自旋。</p>
+<p>独占式超时获取同步态的流程如图5所示。</p>
+<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614203038.png"></p>
+<hr>
+<blockquote>
+<p>全文来自 Java并发编程的艺术  </p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/java%E5%A4%9A%E7%BA%BF%E7%A8%8B/" rel="tag"># java多线程</a>
+              <a href="/tags/%E9%98%9F%E5%88%97%E5%90%8C%E6%AD%A5%E5%99%A8/" rel="tag"># 队列同步器</a>
+              <a href="/tags/lock/" rel="tag"># lock</a>
+              <a href="/tags/AQS/" rel="tag"># AQS</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/04/02/solr/" rel="prev" title="solr简单使用">
+                  <i class="fa fa-angle-left"></i> solr简单使用
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/05/18/JAVAlock/" rel="next" title="Lock">
+                  Lock <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">三十而立</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">61k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">3:40</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+</body>
+</html>

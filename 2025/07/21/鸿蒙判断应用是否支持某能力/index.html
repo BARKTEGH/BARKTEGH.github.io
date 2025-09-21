@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha256-dABdfBfUoC8vJUBOwGVdm8L9qlMWaHTIfXt+7GnZCIo=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"yoursite.com","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.23.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="背景在鸿蒙系统跨应用能力调用场景中，需解决以下核心问题：被调用方应用的版本是否满足当前所需功能。例如抖开SDK判断抖音是否支持投稿、授权才真正进行拉起抖音，不然会出现拉起抖音后没有任何反应或者能力缺失。因此目标为实现在SDK侧能判断应用是否支持某能力。 方案对比（太长不看版）   方案 实现 是否可用 是否启动对方进程 优点 缺点    metadata 字段读取 应用 A 在 module.js">
+<meta property="og:type" content="article">
+<meta property="og:title" content="鸿蒙判断应用是否支持某能力">
+<meta property="og:url" content="http://yoursite.com/2025/07/21/%E9%B8%BF%E8%92%99%E5%88%A4%E6%96%AD%E5%BA%94%E7%94%A8%E6%98%AF%E5%90%A6%E6%94%AF%E6%8C%81%E6%9F%90%E8%83%BD%E5%8A%9B/index.html">
+<meta property="og:site_name" content="三十而立的博客">
+<meta property="og:description" content="背景在鸿蒙系统跨应用能力调用场景中，需解决以下核心问题：被调用方应用的版本是否满足当前所需功能。例如抖开SDK判断抖音是否支持投稿、授权才真正进行拉起抖音，不然会出现拉起抖音后没有任何反应或者能力缺失。因此目标为实现在SDK侧能判断应用是否支持某能力。 方案对比（太长不看版）   方案 实现 是否可用 是否启动对方进程 优点 缺点    metadata 字段读取 应用 A 在 module.js">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-07-21T15:47:21.000Z">
+<meta property="article:modified_time" content="2025-09-21T16:00:05.572Z">
+<meta property="article:author" content="三十而立">
+<meta property="article:tag" content="鸿蒙">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://yoursite.com/2025/07/21/%E9%B8%BF%E8%92%99%E5%88%A4%E6%96%AD%E5%BA%94%E7%94%A8%E6%98%AF%E5%90%A6%E6%94%AF%E6%8C%81%E6%9F%90%E8%83%BD%E5%8A%9B/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://yoursite.com/2025/07/21/%E9%B8%BF%E8%92%99%E5%88%A4%E6%96%AD%E5%BA%94%E7%94%A8%E6%98%AF%E5%90%A6%E6%94%AF%E6%8C%81%E6%9F%90%E8%83%BD%E5%8A%9B/","path":"2025/07/21/鸿蒙判断应用是否支持某能力/","title":"鸿蒙判断应用是否支持某能力"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>鸿蒙判断应用是否支持某能力 | 三十而立的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="https://cdnjs.cloudflare.com/ajax/libs/ribbon.js/1.0.2/ribbon.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/rss2.xml" title="三十而立的博客" type="application/rss+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">三十而立的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">人生苦短</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">26</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">14</span></a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">20</span></a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B9%E6%A1%88%E5%AF%B9%E6%AF%94%EF%BC%88%E5%A4%AA%E9%95%BF%E4%B8%8D%E7%9C%8B%E7%89%88%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">方案对比（太长不看版）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B9%E6%A1%88%E8%B0%83%E7%A0%94"><span class="nav-number">3.</span> <span class="nav-text">方案调研</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#metadata%E5%AD%97%E6%AE%B5%E8%AF%BB%E5%8F%96"><span class="nav-number">3.1.</span> <span class="nav-text">metadata字段读取</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DataShareExtensionAbility"><span class="nav-number">3.2.</span> <span class="nav-text">DataShareExtensionAbility</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#canOpenLink-%E5%88%A4%E6%96%AD%E5%BA%94%E7%94%A8%E6%98%AF%E5%90%A6%E5%8F%AF%E8%AE%BF%E9%97%AE"><span class="nav-number">3.3.</span> <span class="nav-text">canOpenLink 判断应用是否可访问</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="三十而立"
+      src="/uploads/image.png">
+  <p class="site-author-name" itemprop="name">三十而立</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">20</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/BARKTEGH" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;BARKTEGH" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2025/07/21/%E9%B8%BF%E8%92%99%E5%88%A4%E6%96%AD%E5%BA%94%E7%94%A8%E6%98%AF%E5%90%A6%E6%94%AF%E6%8C%81%E6%9F%90%E8%83%BD%E5%8A%9B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/image.png">
+      <meta itemprop="name" content="三十而立">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="三十而立的博客">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="鸿蒙判断应用是否支持某能力 | 三十而立的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          鸿蒙判断应用是否支持某能力
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-07-21 23:47:21" itemprop="dateCreated datePublished" datetime="2025-07-21T23:47:21+08:00">2025-07-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-09-22 00:00:05" itemprop="dateModified" datetime="2025-09-22T00:00:05+08:00">2025-09-22</time>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>993</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>4 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在鸿蒙系统跨应用能力调用场景中，需解决以下核心问题：被调用方应用的版本是否满足当前所需功能。例如抖开SDK判断抖音是否支持投稿、授权才真正进行拉起抖音，不然会出现拉起抖音后没有任何反应或者能力缺失。因此目标为实现在SDK侧能判断应用是否支持某能力。</p>
+<h2 id="方案对比（太长不看版）"><a href="#方案对比（太长不看版）" class="headerlink" title="方案对比（太长不看版）"></a>方案对比（太长不看版）</h2><table>
+<thead>
+<tr>
+<th>方案</th>
+<th>实现</th>
+<th>是否可用</th>
+<th>是否启动对方进程</th>
+<th>优点</th>
+<th>缺点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>metadata 字段读取</td>
+<td>应用 A 在 module.json5 声明能力及版本号，SDK 侧用 bundleManager 读取</td>
+<td>❌</td>
+<td>不会启动</td>
+<td>读取轻量，性能极高，不依赖进程存活；可以随意自定义字段</td>
+<td>三方应用只能查自身包信息，SDK 无法读取其他应用信息</td>
+</tr>
+<tr>
+<td>DataShareExtensionAbility</td>
+<td>应用 A 侧声明并注册扩展能力，SDK 侧创建 DataShareHelper 查询</td>
+<td>❌</td>
+<td>会启动对方的 DataShareExtensionAbility 进程（但不拉 UI）</td>
+<td>跨应用通用，数据可动态更新。如果能力有问题在App侧可以通过settings修改值来避免拉起却不可用的情况。</td>
+<td>第一次调用耗时（冷启动几十~几百 ms）；IPC 大数据效率低；目前仅对系统应用开放，暂不提供相关内容与指导</td>
+</tr>
+<tr>
+<td>使用 canOpenLink 判断应用是否可访问</td>
+<td>调用方在 module.json5 配置 querySchemes 声明 URL scheme，调用 canOpenLink 接口；目标方配置 uris 属性</td>
+<td>✅</td>
+<td>不会启动</td>
+<td>读取轻量，性能极高，不依赖进程存活</td>
+<td>1. 调用方的 querySchemes 最多配置 50 个 URL scheme  2. 每次新增版本号需要在被调用侧新增 schema 的 host。</td>
+</tr>
+</tbody></table>
+<h2 id="方案调研"><a href="#方案调研" class="headerlink" title="方案调研"></a>方案调研</h2><h3 id="metadata字段读取"><a href="#metadata字段读取" class="headerlink" title="metadata字段读取"></a>metadata字段读取</h3><p><strong>实现</strong></p>
+<p>在应用A侧的module.json5 里声明能力及版本号：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;module&quot;: &#123;</span><br><span class="line">    &quot;abilities&quot;: [</span><br><span class="line">      &#123;</span><br><span class="line">        &quot;name&quot;: &quot;MainAbility&quot;,</span><br><span class="line">        &quot;srcEntry&quot;: &quot;./ets/MainAbility.ets&quot;,</span><br><span class="line">        &quot;label&quot;: &quot;AppA&quot;,</span><br><span class="line">        &quot;metadata&quot;: [</span><br><span class="line">          &#123;</span><br><span class="line">            &quot;name&quot;: &quot;bytedance_open_sdk_support&quot;,</span><br><span class="line">            &quot;value&quot;: &quot;1&quot;</span><br><span class="line">          &#125;</span><br><span class="line">        ]</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在SDK侧使用bundleManager 读取字段</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">import bundleManager from &#x27;@ohos.bundle.bundleManager&#x27;;</span><br><span class="line"></span><br><span class="line">async function getAppACapabilityVersion(): Promise&lt;string | null&gt; &#123;</span><br><span class="line">  try &#123;</span><br><span class="line">    let bundleInfo = await bundleManager.getBundleInfo(</span><br><span class="line">      &quot;com.example.appA&quot;,  // App A 的包名</span><br><span class="line">      bundleManager.BundleFlag.GET_ABILITY_INFO_WITH_METADATA</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    for (let ability of bundleInfo.abilityInfos) &#123;</span><br><span class="line">      if (ability.metadata) &#123;</span><br><span class="line">        for (let meta of ability.metadata) &#123;</span><br><span class="line">          if (meta.name === &quot;bytedance_open_sdk_support&quot;) &#123;</span><br><span class="line">            console.log(`App A 能力版本号: $&#123;meta.value&#125;`);</span><br><span class="line">            return meta.value; </span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; catch (err) &#123;</span><br><span class="line">    console.error(&quot;读取能力失败: &quot; + JSON.stringify(err));</span><br><span class="line">  &#125;</span><br><span class="line">  return null;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题</strong></p>
+<p>三方应用目前只能查询到自身应用包的信息，由于安全隐私，暂时不支持查询其他应用。因此在SDK侧无法通过bundleManager读取其他应用的信息。<br><a href="https://developer.huawei.com/consumer/cn/doc/architecture-guides/insurance-v1_2-ts_34-0000002312854248">https://developer.huawei.com/consumer/cn/doc/architecture-guides/insurance-v1_2-ts_34-0000002312854248</a></p>
+<h3 id="DataShareExtensionAbility"><a href="#DataShareExtensionAbility" class="headerlink" title="DataShareExtensionAbility"></a>DataShareExtensionAbility</h3><p><strong>实现</strong></p>
+<p>在应用A侧声明 DataShareExtensionAbility在 ets&#x2F;CustomDataShare.ets 里：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">import dataShare from &#x27;@ohos.data.dataShare&#x27;;</span><br><span class="line">import hilog from &#x27;@ohos.hilog&#x27;;</span><br><span class="line"></span><br><span class="line">const TAG: string = &quot;CustomDataShare&quot;;</span><br><span class="line"></span><br><span class="line">export default class CustomDataShare extends dataShare.DataShareExtensionAbility &#123;</span><br><span class="line">  onCreate(want, callback) &#123;</span><br><span class="line">    hilog.info(0x0000, TAG, &quot;DataShareExtensionAbility onCreate&quot;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  // 处理查询请求</span><br><span class="line">  async query(uri, columns, predicates, callback) &#123;</span><br><span class="line">    hilog.info(0x0000, TAG, `query called. uri=$&#123;uri&#125;`);</span><br><span class="line"></span><br><span class="line">    // 模拟返回一个自定义字段</span><br><span class="line">    let resultSet = &#123;</span><br><span class="line">      columnNames: [&quot;customField&quot;],</span><br><span class="line">      rowCount: 1,</span><br><span class="line">      rowIndex: 0,</span><br><span class="line">      getString: (index) =&gt; &#123;</span><br><span class="line">        if (index === 0) return &quot;HelloFromProviderApp&quot;;</span><br><span class="line">        return &quot;&quot;;</span><br><span class="line">      &#125;,</span><br><span class="line">      goToFirstRow: () =&gt; true,</span><br><span class="line">      close: () =&gt; &#123;&#125;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    callback.onResult(resultSet);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p> 在 module.json5 注册扩展能力<br> <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;extensionAbilities&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;name&quot;: &quot;CustomDataShare&quot;,</span><br><span class="line">      &quot;srcEntry&quot;: &quot;./ets/CustomDataShare.ets&quot;,</span><br><span class="line">      &quot;type&quot;: &quot;dataShare&quot;,</span><br><span class="line">      &quot;uri&quot;: &quot;datashareproxy://com.example.provider&quot; </span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>SDK侧</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">async queryCustomField() &#123;</span><br><span class="line">    try &#123;</span><br><span class="line">      let context = featureAbility.getContext();</span><br><span class="line">      let helper = await dataShare.createDataShareHelper(</span><br><span class="line">        context,</span><br><span class="line">        &quot;datashareproxy://com.example.provider&quot;</span><br><span class="line">      );</span><br><span class="line">      </span><br><span class="line">      let resultSet = await helper.query(</span><br><span class="line">        &#123; uri: &quot;datashareproxy://com.example.provider/customField&quot; &#125;,</span><br><span class="line">        [&quot;customField&quot;],</span><br><span class="line">        null</span><br><span class="line">      );</span><br><span class="line"></span><br><span class="line">      if (resultSet.goToFirstRow()) &#123;</span><br><span class="line">        this.message = resultSet.getString(0);</span><br><span class="line">      &#125;</span><br><span class="line">      resultSet.close();</span><br><span class="line">    &#125; catch (err) &#123;</span><br><span class="line">      hilog.error(0x0000, TAG, &quot;query error: &quot; + JSON.stringify(err));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题</strong></p>
+<p>使用DataShareExtensionAbility实现数据共享：目前仅对系统应用开放，暂不具体展开提供相关内容和指导。<br><a href="https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/data-share-overview">https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/data-share-overview</a></p>
+<h3 id="canOpenLink-判断应用是否可访问"><a href="#canOpenLink-判断应用是否可访问" class="headerlink" title="canOpenLink 判断应用是否可访问"></a>canOpenLink 判断应用是否可访问</h3><p><strong>实现</strong></p>
+<p>参考文档：<a href="https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/canopenlink">https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/canopenlink</a></p>
+<p>调用方（SDK）：</p>
+<ol>
+<li>在 entry 模块的 module.json5 文件中配置 querySchemes 属性，声明想要查询的 URL scheme。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;module&quot;: &#123;</span><br><span class="line">    //...</span><br><span class="line">    &quot;querySchemes&quot;: [</span><br><span class="line">      &quot;app1Scheme&quot;</span><br><span class="line">    ]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>调用 canOpenLink 接口：<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">import &#123; bundleManager &#125; from &#x27;@kit.AbilityKit&#x27;;</span><br><span class="line">import &#123; BusinessError &#125; from &#x27;@kit.BasicServicesKit&#x27;;</span><br><span class="line">import &#123; hilog &#125; from &#x27;@kit.PerformanceAnalysisKit&#x27;;</span><br><span class="line">try &#123;</span><br><span class="line">  let link = &#x27;app1Scheme://test.example.com/home&#x27;;</span><br><span class="line">  let canOpen = bundleManager.canOpenLink(link);</span><br><span class="line">  hilog.info(0x0000, &#x27;testTag&#x27;, &#x27;canOpenLink successfully: %&#123;public&#125;s&#x27;, JSON.stringify(canOpen));</span><br><span class="line">&#125; catch (err) &#123;</span><br><span class="line">  let message = (err as BusinessError).message;</span><br><span class="line">  hilog.error(0x0000, &#x27;testTag&#x27;, &#x27;canOpenLink failed: %&#123;public&#125;s&#x27;, message);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>目标方：<br>在 module.json5 文件中配置 uris 属性。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;module&quot;: &#123;</span><br><span class="line">    //...</span><br><span class="line">    &quot;abilities&quot;: [</span><br><span class="line">      &#123;</span><br><span class="line">        //...</span><br><span class="line">        &quot;skills&quot;: [</span><br><span class="line">          &#123;</span><br><span class="line">            // actions不能为空，actions为空会造成目标方匹配失败</span><br><span class="line">            &quot;actions&quot;: [&quot;ohos.want.action.home&quot;],</span><br><span class="line">            &quot;uris&quot;: [</span><br><span class="line">              &#123;</span><br><span class="line">                &quot;scheme&quot;: &quot;app1Scheme&quot;,</span><br><span class="line">                &quot;host&quot;: &quot;test.example.com&quot;,</span><br><span class="line">                &quot;pathStartWith&quot;: &quot;home&quot;</span><br><span class="line">              &#125;</span><br><span class="line">            ]</span><br><span class="line">          &#125;</span><br><span class="line">        ]</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">  &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题</strong></p>
+<p>querySchemes 中最多允许配置 50 个 URL scheme。因此限制不能无限使用新的 schema 头，但整体方案是可行的。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E9%B8%BF%E8%92%99/" rel="tag"># 鸿蒙</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/04/25/UV-Python%E5%8C%85%E5%92%8C%E9%A1%B9%E7%9B%AE%E7%AE%A1%E7%90%86%E5%99%A8/" rel="prev" title="UV-Python包和项目管理器">
+                  <i class="fa fa-angle-left"></i> UV-Python包和项目管理器
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">三十而立</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">61k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">3:40</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+</body>
+</html>

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha256-dABdfBfUoC8vJUBOwGVdm8L9qlMWaHTIfXt+7GnZCIo=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"yoursite.com","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.23.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="说明UV, 一个用 Rust 编写的极快的 Python 包和项目管理器。  🚀一个工具即可替换pip、、、、、、、等等pip-tools。pipx&#96;&#96;poetry&#96;&#96;pyenv&#96;&#96;twine&#96;&#96;virtualenv ⚡️比快 10-100 倍pip。 🗂️ 提供全面的项目管理，并带有 通用的锁文件。 ❇️运行脚本，支持 内联依赖元数据。 🐍安装和管理Python 版本。 🛠️运行并安装作">
+<meta property="og:type" content="article">
+<meta property="og:title" content="UV-Python包和项目管理器">
+<meta property="og:url" content="http://yoursite.com/2025/04/25/UV-Python%E5%8C%85%E5%92%8C%E9%A1%B9%E7%9B%AE%E7%AE%A1%E7%90%86%E5%99%A8/index.html">
+<meta property="og:site_name" content="三十而立的博客">
+<meta property="og:description" content="说明UV, 一个用 Rust 编写的极快的 Python 包和项目管理器。  🚀一个工具即可替换pip、、、、、、、等等pip-tools。pipx&#96;&#96;poetry&#96;&#96;pyenv&#96;&#96;twine&#96;&#96;virtualenv ⚡️比快 10-100 倍pip。 🗂️ 提供全面的项目管理，并带有 通用的锁文件。 ❇️运行脚本，支持 内联依赖元数据。 🐍安装和管理Python 版本。 🛠️运行并安装作">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-04-25T11:04:48.000Z">
+<meta property="article:modified_time" content="2025-09-21T15:32:32.722Z">
+<meta property="article:author" content="三十而立">
+<meta property="article:tag" content="python">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://yoursite.com/2025/04/25/UV-Python%E5%8C%85%E5%92%8C%E9%A1%B9%E7%9B%AE%E7%AE%A1%E7%90%86%E5%99%A8/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://yoursite.com/2025/04/25/UV-Python%E5%8C%85%E5%92%8C%E9%A1%B9%E7%9B%AE%E7%AE%A1%E7%90%86%E5%99%A8/","path":"2025/04/25/UV-Python包和项目管理器/","title":"UV-Python包和项目管理器"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>UV-Python包和项目管理器 | 三十而立的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="https://cdnjs.cloudflare.com/ajax/libs/ribbon.js/1.0.2/ribbon.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/rss2.xml" title="三十而立的博客" type="application/rss+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">三十而立的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">人生苦短</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">26</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">14</span></a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">20</span></a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%B4%E6%98%8E"><span class="nav-number">1.</span> <span class="nav-text">说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85"><span class="nav-number">2.</span> <span class="nav-text">安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8B%AC%E7%AB%8B%E5%AE%89%E8%A3%85"><span class="nav-number">2.1.</span> <span class="nav-text">独立安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#WinGet"><span class="nav-number">2.2.</span> <span class="nav-text">WinGet</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Scoop"><span class="nav-number">2.3.</span> <span class="nav-text">Scoop</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8"><span class="nav-number">3.</span> <span class="nav-text">使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E7%AE%A1%E7%90%86"><span class="nav-number">3.1.</span> <span class="nav-text">项目管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%96%B0%E9%A1%B9%E7%9B%AE"><span class="nav-number">3.1.1.</span> <span class="nav-text">创建新项目</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E7%BB%93%E6%9E%84"><span class="nav-number">3.1.2.</span> <span class="nav-text">项目结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AE%A1%E7%90%86%E4%BE%9D%E8%B5%96%E9%A1%B9"><span class="nav-number">3.1.3.</span> <span class="nav-text">管理依赖项</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E5%91%BD%E4%BB%A4"><span class="nav-number">3.1.4.</span> <span class="nav-text">运行命令</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E5%8F%91%E8%A1%8C%E7%89%88"><span class="nav-number">3.1.5.</span> <span class="nav-text">构建发行版</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python%E7%AE%A1%E7%90%86"><span class="nav-number">3.2.</span> <span class="nav-text">Python管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E8%84%9A%E6%9C%AC"><span class="nav-number">3.3.</span> <span class="nav-text">运行脚本</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="三十而立"
+      src="/uploads/image.png">
+  <p class="site-author-name" itemprop="name">三十而立</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">20</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/BARKTEGH" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;BARKTEGH" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2025/04/25/UV-Python%E5%8C%85%E5%92%8C%E9%A1%B9%E7%9B%AE%E7%AE%A1%E7%90%86%E5%99%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/image.png">
+      <meta itemprop="name" content="三十而立">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="三十而立的博客">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="UV-Python包和项目管理器 | 三十而立的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          UV-Python包和项目管理器
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-04-25 19:04:48" itemprop="dateCreated datePublished" datetime="2025-04-25T19:04:48+08:00">2025-04-25</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-09-21 23:32:32" itemprop="dateModified" datetime="2025-09-21T23:32:32+08:00">2025-09-21</time>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>1.4k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>5 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h2><p><a href="https://docs.astral.sh/uv/getting-started/installation/">UV</a>, 一个用 Rust 编写的极快的 Python 包和项目管理器。</p>
+<ul>
+<li>🚀一个工具即可替换<code>pip</code>、、、、、、、等等<code>pip-tools</code>。<code>pipx``poetry``pyenv``twine``virtualenv</code></li>
+<li>⚡️比<a href="https://github.com/astral-sh/uv/blob/main/BENCHMARKS.md">快 10-100 倍</a><code>pip</code>。</li>
+<li>🗂️ 提供<a href="https://github.com/astral-sh/uv#projects">全面的项目管理</a>，并带有 <a href="https://docs.astral.sh/uv/concepts/projects/layout#the-lockfile">通用的锁文件</a>。</li>
+<li>❇️<a href="https://github.com/astral-sh/uv#scripts">运行脚本</a>，支持 <a href="https://docs.astral.sh/uv/guides/scripts#declaring-script-dependencies">内联依赖元数据</a>。</li>
+<li>🐍<a href="https://github.com/astral-sh/uv#python-versions">安装和管理</a>Python 版本。</li>
+<li>🛠️<a href="https://github.com/astral-sh/uv#tools">运行并安装</a>作为 Python 包发布的工具。</li>
+<li>🔩 包含与<a href="https://github.com/astral-sh/uv#the-pip-interface">pip 兼容的接口</a>，可通过熟悉的 CLI 提高性能。</li>
+<li>🏢 支持可扩展项目的Cargo 风格<a href="https://docs.astral.sh/uv/concepts/projects/workspaces">工作区。</a></li>
+<li>💾 节省磁盘空间，具有用于依赖性重复数据删除的<a href="https://docs.astral.sh/uv/concepts/cache">全局缓存</a>。</li>
+<li>⏬ 无需 Rust 或 Python 即可通过<code>curl</code>或安装<code>pip</code>。</li>
+<li>🖥️ 支持 macOS、Linux 和 Windows。</li>
+</ul>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><h3 id="独立安装"><a href="#独立安装" class="headerlink" title="独立安装"></a>独立安装</h3><p>uv 提供了一个独立的安装程序来下载和安装 uv：<br>Widnow使用<code>irm</code>以下方式下载脚本并执行<code>iex</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">powershell -ExecutionPolicy ByPass -c &quot;irm https://astral.sh/uv/install.ps1 | iex&quot;</span><br></pre></td></tr></table></figure>
+<p>通过在 URL 中包含特定版本来请求它</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">powershell -ExecutionPolicy ByPass -c &quot;irm https://astral.sh/uv/0.6.14/install.ps1 | iex&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="WinGet"><a href="#WinGet" class="headerlink" title="WinGet"></a>WinGet</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">winget install --id=astral-sh.uv  -e</span><br></pre></td></tr></table></figure>
+<h3 id="Scoop"><a href="#Scoop" class="headerlink" title="Scoop"></a>Scoop</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">scoop install main/uv</span><br></pre></td></tr></table></figure>
+
+
+<p>安装完成后使用以下命令来检查uv是否可用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uv</span><br></pre></td></tr></table></figure>
+<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>uv 提供了 Python 开发的基本功能——从安装 Python 和支持简单脚本到处理支持多个 Python 版本和平台的大型项目。目前uv 主要分为下面几个功能,下面简单介绍一下使用。</p>
+<ul>
+<li>Python版本的管理</li>
+<li>脚本执行</li>
+<li>项目管理</li>
+</ul>
+<h3 id="项目管理"><a href="#项目管理" class="headerlink" title="项目管理"></a><a href="https://docs.astral.sh/uv/concepts/projects/">项目管理</a></h3><p>uv 支持管理 Python 项目，在文件中定义其依赖关系<code>pyproject.toml</code>。<br>主要包含下面命令:</p>
+<ul>
+<li><code>uv init</code>：创建一个新的 Python 项目。</li>
+<li><code>uv add</code>：向项目添加依赖项。</li>
+<li><code>uv remove</code>：从项目中删除依赖项。</li>
+<li><code>uv sync</code>：将项目的依赖项与环境同步。</li>
+<li><code>uv lock</code>：为项目的依赖项创建一个锁文件。</li>
+<li><code>uv run</code>：在项目环境中运行命令。</li>
+<li><code>uv tree</code>：查看项目的依赖关系树。</li>
+<li><code>uv build</code>：将项目构建到分发档案中。</li>
+<li><code>uv publish</code>：将项目发布到包索引。</li>
+</ul>
+<h4 id="创建新项目"><a href="#创建新项目" class="headerlink" title="创建新项目"></a>创建新项目</h4><p>可以使用以下命令创建一个新的 Python 项目<code>uv init</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">uv init hello-world</span><br><span class="line">cd hello-world</span><br></pre></td></tr></table></figure>
+
+<p>或者，您可以在工作目录中初始化一个项目：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir hello-world</span><br><span class="line">cd hello-world</span><br><span class="line">uv init</span><br></pre></td></tr></table></figure>
+<p>uv 将创建以下文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── .python-version</span><br><span class="line">├── README.md</span><br><span class="line">├── main.py</span><br><span class="line">└── pyproject.toml</span><br></pre></td></tr></table></figure>
+
+<h4 id="项目结构"><a href="#项目结构" class="headerlink" title="项目结构"></a>项目结构</h4><p>一个项目由几个重要的部分组成，它们协同工作，并允许 uv 管理你的项目。除了 由 创建的文件之外， 当你第一次运行项目命令（即、 或 ）时， <code>uv init</code>uv 还会在项目的根目录中创建一个虚拟环境和文件。完整列表如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── .venv   //虚拟环境</span><br><span class="line">│   ├── bin</span><br><span class="line">│   ├── lib</span><br><span class="line">│   └── pyvenv.cfg</span><br><span class="line">├── .python-version  //包含项目的默认 Python 版本。此文件告诉 uv 在创建项目的虚拟环境时使用哪个 Python 版本。</span><br><span class="line">├── README.md  </span><br><span class="line">├── main.py</span><br><span class="line">├── pyproject.toml    // 有关您的项目的元数据</span><br><span class="line">└── uv.lock  </span><br></pre></td></tr></table></figure>
+<p>其中<code>uv.lock</code>是一个跨平台的锁文件，其中包含项目依赖项的精确信息。与<code>pyproject.toml</code>用于指定项目总体需求的 不同，锁文件包含项目环境中已安装的精确解析版本。&#x3D;&#x3D;此文件应纳入版本控制，以便在不同机器上实现一致且可重复的安装&#x3D;&#x3D;。<code>uv.lock</code>是人类可读的 TOML 文件，但由 uv 管理，不应手动编辑。</p>
+<h4 id="管理依赖项"><a href="#管理依赖项" class="headerlink" title="管理依赖项"></a>管理依赖项</h4><p>可以使用命令<code>uv add</code>添加依赖项，这也会更新锁pyproject.toml文件和项目环境&#96;&#96;&#96;</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">uv add requests</span><br><span class="line"># 指定特定的版本</span><br><span class="line">uv add &#x27;requests==2.31.0&#x27;</span><br><span class="line"># 指定特定的源</span><br><span class="line">uv add git+https://github.com/psf/requests</span><br></pre></td></tr></table></figure>
+<p>如果要删除依赖，可以使用<code>uv remove</code> 命令。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uv remove requests</span><br></pre></td></tr></table></figure>
+<p>要升级软件包，请<code>uv lock</code>使用以下<code>--upgrade-package</code>标志运行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uv lock --upgrade-package requests</span><br></pre></td></tr></table></figure>
+
+<p>该<code>--upgrade-package</code>标志将尝试将指定的包更新到最新的兼容版本，同时保持锁文件的其余部分完好无损。</p>
+<h4 id="运行命令"><a href="#运行命令" class="headerlink" title="运行命令"></a>运行命令</h4><p><code>uv run</code>可用于在您的项目环境中运行任意脚本或命令。</p>
+<p>在每次调用之前<code>uv run</code>，uv 都会验证锁文件是否是最新的 <code>pyproject.toml</code>，并且环境是否是最新的锁文件，从而使您的项目保持同步，而无需手动干预。<code>uv run</code>保证您的命令在一致的、锁定的环境中运行。</p>
+<p>例如，使用<code>flask</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">uv add flask</span><br><span class="line">uv run -- flask run -p 3000</span><br></pre></td></tr></table></figure>
+<p>也可以使用<code>uv sync</code>手动更新环境，然后在执行命令之前激活它：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">uv sync</span><br><span class="line">source .venv\Scripts\activate</span><br><span class="line">flask run -p 3000</span><br></pre></td></tr></table></figure>
+
+<h4 id="构建发行版"><a href="#构建发行版" class="headerlink" title="构建发行版"></a>构建发行版</h4><p><code>uv build</code>可用于为您的项目构建源分布和二进制分布（轮子）。<br>默认情况下，<code>uv build</code>将在当前目录中构建项目，并将构建的工件放在<code>dist/</code>子目录中：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">uv build</span><br><span class="line">ls dist/</span><br></pre></td></tr></table></figure>
+
+<h3 id="Python管理"><a href="#Python管理" class="headerlink" title="Python管理"></a>Python管理</h3><p>如果您的系统上已安装 Python，uv 将 <a href="https://docs.astral.sh/uv/guides/install-python/#using-existing-python-versions">检测并使用</a>它，无需任何配置。但是，uv 还可以安装和管理 Python 版本。uv 会根据需要<a href="https://docs.astral.sh/uv/guides/install-python/#automatic-python-downloads">自动安装</a>缺少的 Python 版本——您无需安装 Python 即可开始使用。</p>
+<p>安装最新的版本</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uv python install</span><br></pre></td></tr></table></figure>
+<p>安装特定的版本</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uv python install 3.12</span><br></pre></td></tr></table></figure>
+<p>重新安装</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uv python install --reinstall</span><br></pre></td></tr></table></figure>
+<p>查看已安装的Python版本</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uv python list</span><br></pre></td></tr></table></figure>
+
+<h3 id="运行脚本"><a href="#运行脚本" class="headerlink" title="运行脚本"></a><a href="https://docs.astral.sh/uv/guides/scripts/">运行脚本</a></h3><p>Python 脚本是用于独立执行的文件，例如<code>python &lt;script&gt;.py</code>。使用 uv 执行脚本可确保管理脚本依赖关系，而无需手动管理环境。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/python/" rel="tag"># python</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/04/25/Scoop/" rel="prev" title="Scoop -window下包管理器">
+                  <i class="fa fa-angle-left"></i> Scoop -window下包管理器
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/07/21/%E9%B8%BF%E8%92%99%E5%88%A4%E6%96%AD%E5%BA%94%E7%94%A8%E6%98%AF%E5%90%A6%E6%94%AF%E6%8C%81%E6%9F%90%E8%83%BD%E5%8A%9B/" rel="next" title="鸿蒙判断应用是否支持某能力">
+                  鸿蒙判断应用是否支持某能力 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">三十而立</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">61k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">3:40</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+</body>
+</html>

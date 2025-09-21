@@ -1,0 +1,2070 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha256-dABdfBfUoC8vJUBOwGVdm8L9qlMWaHTIfXt+7GnZCIo=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"yoursite.com","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.23.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="安卓开发—天气 技术选型 ViewPager  用来展示切换多个城市天气情况 SwipeRefreshLayout 下拉刷新天气 ScrollView 滑动展示天气详情 参考第一行代码中CoolWeather  页面布局天气页面的粗略布局如下：主要为SwipeRefreshLayout嵌套ViewPager &lt;FrameLayout&gt;     &#x2F;&#x2F;展示背景图片     &lt;Imag">
+<meta property="og:type" content="article">
+<meta property="og:title" content="安卓开发---天气">
+<meta property="og:url" content="http://yoursite.com/2020/04/24/%E5%AE%89%E5%8D%93weather%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="三十而立的博客">
+<meta property="og:description" content="安卓开发—天气 技术选型 ViewPager  用来展示切换多个城市天气情况 SwipeRefreshLayout 下拉刷新天气 ScrollView 滑动展示天气详情 参考第一行代码中CoolWeather  页面布局天气页面的粗略布局如下：主要为SwipeRefreshLayout嵌套ViewPager &lt;FrameLayout&gt;     &#x2F;&#x2F;展示背景图片     &lt;Imag">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-04-24T12:36:24.000Z">
+<meta property="article:modified_time" content="2025-09-21T15:32:32.732Z">
+<meta property="article:author" content="三十而立">
+<meta property="article:tag" content="Android">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://yoursite.com/2020/04/24/%E5%AE%89%E5%8D%93weather%E5%88%86%E6%9E%90/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://yoursite.com/2020/04/24/%E5%AE%89%E5%8D%93weather%E5%88%86%E6%9E%90/","path":"2020/04/24/安卓weather分析/","title":"安卓开发---天气"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>安卓开发---天气 | 三十而立的博客</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="https://cdnjs.cloudflare.com/ajax/libs/ribbon.js/1.0.2/ribbon.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/rss2.xml" title="三十而立的博客" type="application/rss+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">三十而立的博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">人生苦短</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">26</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">14</span></a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">20</span></a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E5%8D%93%E5%BC%80%E5%8F%91%E2%80%94%E5%A4%A9%E6%B0%94"><span class="nav-number">1.</span> <span class="nav-text">安卓开发—天气</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%80%E6%9C%AF%E9%80%89%E5%9E%8B"><span class="nav-number">1.0.1.</span> <span class="nav-text">技术选型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E5%B8%83%E5%B1%80"><span class="nav-number">1.0.2.</span> <span class="nav-text">页面布局</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%81%87%E5%88%B0%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">1.0.3.</span> <span class="nav-text">遇到的问题</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ViewPager%E5%92%8CSwipeRefreshLayout%E5%8F%91%E7%94%9F%E6%BB%91%E5%8A%A8%E5%86%B2%E7%AA%81"><span class="nav-number">1.0.3.1.</span> <span class="nav-text">ViewPager和SwipeRefreshLayout发生滑动冲突</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#SwipeRefreshLayout%E4%B8%8EScrollView%E5%8F%91%E7%94%9F%E4%B8%8B%E6%BB%91%E5%86%B2%E7%AA%81"><span class="nav-number">1.0.3.2.</span> <span class="nav-text">SwipeRefreshLayout与ScrollView发生下滑冲突</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ViewPager%E5%8A%A8%E6%80%81%E6%9B%B4%E6%96%B0%E9%A1%B5%E9%9D%A2"><span class="nav-number">1.0.3.3.</span> <span class="nav-text">ViewPager动态更新页面</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ViewPager%E9%A1%B5%E6%B7%BB%E5%8A%A0%E6%88%96%E5%87%8F%E5%B0%91%E5%9F%8E%E5%B8%82"><span class="nav-number">1.0.3.4.</span> <span class="nav-text">ViewPager页添加或减少城市</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Weather%E5%B1%95%E7%A4%BA"><span class="nav-number">1.0.3.5.</span> <span class="nav-text">Weather展示</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%8E%E5%9F%8E%E5%B8%82%E6%B7%BB%E5%8A%A0%E9%A1%B5%E9%9D%A2%E8%B7%B3%E8%BD%AC%E5%88%B0Weather%E9%A1%B5%E9%9D%A2%E5%B1%95%E7%A4%BA%E5%BD%93%E5%89%8D%E9%80%89%E4%B8%AD%E7%9A%84%E5%9F%8E%E5%B8%82"><span class="nav-number">1.0.3.6.</span> <span class="nav-text">从城市添加页面跳转到Weather页面展示当前选中的城市</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%B1%95%E7%A4%BA"><span class="nav-number">1.0.4.</span> <span class="nav-text">代码展示</span></a></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="三十而立"
+      src="/uploads/image.png">
+  <p class="site-author-name" itemprop="name">三十而立</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">20</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/BARKTEGH" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;BARKTEGH" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/24/%E5%AE%89%E5%8D%93weather%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/uploads/image.png">
+      <meta itemprop="name" content="三十而立">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="三十而立的博客">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="安卓开发---天气 | 三十而立的博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          安卓开发---天气
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2020-04-24 20:36:24" itemprop="dateCreated datePublished" datetime="2020-04-24T20:36:24+08:00">2020-04-24</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-09-21 23:32:32" itemprop="dateModified" datetime="2025-09-21T23:32:32+08:00">2025-09-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Android/" itemprop="url" rel="index"><span itemprop="name">Android</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>5.5k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>20 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="安卓开发—天气"><a href="#安卓开发—天气" class="headerlink" title="安卓开发—天气"></a>安卓开发—天气</h1><hr>
+<h3 id="技术选型"><a href="#技术选型" class="headerlink" title="技术选型"></a>技术选型</h3><ol>
+<li>ViewPager  用来展示切换多个城市天气情况</li>
+<li>SwipeRefreshLayout 下拉刷新天气</li>
+<li>ScrollView 滑动展示天气详情</li>
+<li>参考第一行代码中CoolWeather</li>
+</ol>
+<h3 id="页面布局"><a href="#页面布局" class="headerlink" title="页面布局"></a>页面布局</h3><p>天气页面的粗略布局如下：<br>主要为SwipeRefreshLayout嵌套ViewPager</p>
+<pre><code>&lt;FrameLayout&gt;
+    //展示背景图片
+    &lt;ImageView/&gt;
+    &lt;LinearLayout&gt;
+        &lt;LinearLayout/&gt;
+        //下拉刷新
+        &lt;SwipeRefreshLayout&gt;	
+            //展示天气页面
+            &lt;ViewPager/&gt;
+        &lt;/SwipeRefreshLayout&gt;
+    &lt;/LinearLayout&gt;
+&lt;/FrameLayout&gt;
+</code></pre>
+<p>下面为viewpager的布局，ScrollView用来滑动展示单个城市的天气详情，LinearLayout里展示天气详情</p>
+<pre><code>&lt;FrameLayout&gt;
+    //纵向滑动显示天气详情
+    &lt;ScrollView&gt;
+        &lt;LinearLayout&gt;
+            &lt;include layout=&quot;@layout/now&quot; /&gt;
+            &lt;include layout=&quot;@layout/forecast&quot; /&gt;
+            &lt;include layout=&quot;@layout/lifestyle&quot;/&gt;
+        &lt;/LinearLayout&gt;
+    &lt;/ScrollView&gt;
+&lt;/FrameLayout&gt;
+</code></pre>
+<h3 id="遇到的问题"><a href="#遇到的问题" class="headerlink" title="遇到的问题"></a>遇到的问题</h3><h4 id="ViewPager和SwipeRefreshLayout发生滑动冲突"><a href="#ViewPager和SwipeRefreshLayout发生滑动冲突" class="headerlink" title="ViewPager和SwipeRefreshLayout发生滑动冲突"></a>ViewPager和SwipeRefreshLayout发生滑动冲突</h4><ul>
+<li><p>原因: SwipeRefreshLayout的onIntercept方法发现是在这里拦截了滑动事件，无法传递到viewpager里，假如无法像直线一样横向滑动出现了纵向偏差就会触发SwipeRefreshLayout</p>
+</li>
+<li><p>解决思路：下拉刷新只在纵向滑动触发，那么在SwipeRefreshLayout里只拦截纵向滑动</p>
+<pre><code>  import android.content.Context;
+  import android.util.AttributeSet;
+  import android.view.MotionEvent;
+  import android.view.ViewConfiguration;
+  
+  import androidx.annotation.NonNull;
+  import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+  
+  public class PocketSwipeRefreshLayout extends SwipeRefreshLayout &#123;
+      private float mStartX = 0;
+      private float mStartY = 0;
+  
+      //记录Viewpager是否被拖拉
+      private boolean mIsVpDrag;
+      private final int mTouchSlop;
+      public PocketSwipeRefreshLayout(@NonNull Context context) &#123;
+          super(context);
+          mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+      &#125;
+  
+      public PocketSwipeRefreshLayout(@NonNull Context context, AttributeSet attrs) &#123;
+          super(context,attrs);
+          mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+      &#125;
+  
+      @Override
+      public boolean onInterceptTouchEvent(MotionEvent ev) &#123;
+          int action = ev.getAction();
+          switch (action)&#123;
+              case MotionEvent.ACTION_DOWN:
+                  mStartX = ev.getX();
+                  mStartY = ev.getY();
+                  mIsVpDrag = false;
+                  break;
+              case MotionEvent.ACTION_MOVE:
+                  //如果viewpager正在拖拽，则不拦截viewpager事件
+                  if (mIsVpDrag)&#123;
+                      return false;
+                  &#125;
+                  float x = ev.getX();
+                  float y = ev.getY();
+                  float distanceX = Math.abs(x - mStartX);
+                  float distanceY = Math.abs(y - mStartY);
+                  //如果滑动x位移大于y，不拦截viewpager事件
+                  if (distanceX &gt; mTouchSlop &amp;&amp; distanceX&gt;distanceY)&#123;
+                      mIsVpDrag = true;
+                      return false;
+                  &#125;
+                  break;
+              case MotionEvent.ACTION_UP:
+              case MotionEvent.ACTION_CANCEL:
+                  mIsVpDrag = true;
+                  break;
+              default:
+                  break;
+          &#125;
+          return super.onInterceptTouchEvent(ev);
+  
+      &#125;
+  &#125;
+</code></pre>
+</li>
+</ul>
+<h4 id="SwipeRefreshLayout与ScrollView发生下滑冲突"><a href="#SwipeRefreshLayout与ScrollView发生下滑冲突" class="headerlink" title="SwipeRefreshLayout与ScrollView发生下滑冲突"></a>SwipeRefreshLayout与ScrollView发生下滑冲突</h4><ul>
+<li><p>情况说明：在未采用ViewPager时，即只展示一个城市天气时，SwipeRefreshLayout与ScrollView并不会发生下滑冲突，但在采用ViewPager后会发生冲突，导致浏览到页面下部后却触发SwipeRefreshLayout无法向上滑动页面</p>
+</li>
+<li><p>原因：SwipeRefreshLayout拦截了纵向滑动事件，但为什么未采用viewpager是不会发生冲突还未明白</p>
+</li>
+<li><p>解决思路：当且仅当滑动到顶部时才需要触发下拉刷新，那么在纵坐标未在顶部时屏蔽SwipeRefreshLayout</p>
+<pre><code>  // 初始化各控件
+  ScrollView weatherLayout = (ScrollView) view.findViewById(R.id.weather_layout);
+  //解决SwipeRefreshLayout与ScrollView的下拉冲突
+  weatherLayout.setOnScrollChangeListener(new View.OnScrollChangeListener() &#123;
+      @Override
+      public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) &#123;
+          if (swipeRefreshLayout != null)&#123;
+              swipeRefreshLayout.setEnabled(scrollY==0);
+          &#125;
+      &#125;
+  &#125;);
+</code></pre>
+</li>
+</ul>
+<h4 id="ViewPager动态更新页面"><a href="#ViewPager动态更新页面" class="headerlink" title="ViewPager动态更新页面"></a>ViewPager动态更新页面</h4><ul>
+<li><p>情况说明：在下拉刷新时，需要去重新得到城市的天气情况并展示在UI中。</p>
+</li>
+<li><p>解决思路：PagerAdapter可以通过调用notifyDataSetChanged()方法实现数据集的刷新。<br>viewpager的刷新过程是这样的：在每次调用notifyDataSetChanged()时，都会激活getItemPosition(Object object)方法，该方法会遍历viewpager的所有item，为每个item返回一个状态值（POSITION_NONE&#x2F;POSITION_UNCHANGED），如果是none，那么该item会被destroyItem(ViewGroup container, int position, Object object)方法remove掉，然后重新加载，如果是unchanged，就不会重新加载，默认是unchanged，所以如果我们不重写getItemPosition(Object object)，就无法看到刷新效果。</p>
+<p>  那么为了只刷新单个页面，我们重写getItemPosition方法，并且为了确定需要刷新哪个页面，给每个view添加一个tag。</p>
+<pre><code>  viewPager = (ViewPager) findViewById(R.id.weather_pager);
+  LayoutInflater layoutInflater = getLayoutInflater();
+  for (int i=0;i&lt;choosedCountyList.size(); i++)&#123;
+      View view = layoutInflater.inflate(R.layout.weather_layout, null);
+      view.setTag(i);
+      String countyName = choosedCountyList.get(i);
+      fillView(view, countyName,true);
+      pageList.add(view);
+  &#125;
+  adapter = new PagerAdapter() &#123;
+      @Override
+      public int getCount() &#123;
+          return pageList.size();
+      &#125;
+
+      @Override
+      public int getItemPosition(@NonNull Object object) &#123;
+          //更新其中一个页面
+          View view = (View) object;
+          int currentPagerIdx = viewPager.getCurrentItem();
+          if (currentPagerIdx == (Integer) view.getTag()) &#123;
+              return POSITION_NONE;
+          &#125; else &#123;
+              return POSITION_UNCHANGED;
+          &#125;
+    
+      &#125;
+
+      @Override
+      public boolean isViewFromObject(@NonNull View view, @NonNull Object object) &#123;
+          return view==object;
+      &#125;
+
+      @Override
+      public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) &#123;
+          container.removeView(pageList.get(position));
+      &#125;
+
+      @NonNull
+      @Override
+      public Object instantiateItem(@NonNull ViewGroup container, int position) &#123;
+          container.addView(pageList.get(position));
+          return pageList.get(position);
+      &#125;
+
+
+  &#125;;
+</code></pre>
+</li>
+</ul>
+<h4 id="ViewPager页添加或减少城市"><a href="#ViewPager页添加或减少城市" class="headerlink" title="ViewPager页添加或减少城市"></a>ViewPager页添加或减少城市</h4><ul>
+<li>情况说明：<ul>
+<li>当出现删除城市时，即删除viewPager中的view，如果直接pageList中remove页面后使用adapter.notifyDataSetChanged()来通通知视图改变，这会出现超出索引的问题。</li>
+<li>当出现增加城市，一般不会出现问题。</li>
+<li>当出现城市数量不变但是城市发生了改变，会出现显示城市错误的情况，仍然显示原来的城市天气情况。</li>
+</ul>
+</li>
+<li>原因： <ul>
+<li>destroyItem方法中采用了位置索引的方式来删除页面，但是因为pageList中remove了页面，导致索引超出了。</li>
+<li>无问题</li>
+<li>因为viewPager会缓存当前页面的左右页面(3个页面)，这会导致仍然显示原来的城市</li>
+</ul>
+</li>
+<li>解决思路：<ul>
+<li>destroyItem方法将object转为view后删除的方式来解决索引问题。</li>
+<li>清空pageList，重新添加城市，此时需要注意因为上面选择了只更新当前页面，但现在需要更新所有页面，设置标志位来辨别更新一个还是更新所有。</li>
+</ul>
+</li>
+</ul>
+<p>主要的代码变动如下：</p>
+<pre><code>//改变适配器
+adapter = new PagerAdapter() &#123;
+    @Override
+    public int getCount() &#123;
+        return pageList.size();
+    &#125;
+
+    @Override
+    public int getItemPosition(@NonNull Object object) &#123;
+        if (updateStatu == UPDATE_ONE_PAGE)&#123;
+            //更新其中一个页面
+            View view = (View) object;
+            int currentPagerIdx = viewPager.getCurrentItem();
+            if (currentPagerIdx == (Integer) view.getTag()) &#123;
+                return POSITION_NONE;
+            &#125; else &#123;
+                return POSITION_UNCHANGED;
+            &#125;
+        &#125; else if (updateStatu == UPDATE_ALL_PAGE)&#123;
+            //更新所有页面，目的为去除缓存
+            return POSITION_NONE;
+       &#125;
+        return POSITION_NONE;
+    &#125;
+&#125;
+
+
+//在城市列表方式变化是重新生成页面
+//当前变化
+if (!equalList(curList, choosedCountyList))&#123;
+    LayoutInflater layoutInflater = getLayoutInflater();
+    pageList.clear();
+    for (int i=0; i&lt; curList.size();i++)&#123;
+        //以前的没有，新增的城市，新增页面
+        View view = layoutInflater.inflate(R.layout.weather_layout, null);
+        view.setTag(i);
+        String countyName = curList.get(i);
+        fillView(view, countyName,false);
+        pageList.add(i, view);
+    &#125;
+    updateStatu = UPDATE_ALL_PAGE;
+    adapter.notifyDataSetChanged();
+&#125;
+//一定要在选择页面前更新城市列表，不然增加城市时onPageSelected出现超过索引的问题
+choosedCountyList = curList;
+viewPager.setCurrentItem(position);
+
+/**
+ * 更新当前页天气
+ */
+private void updatePageView()&#123;
+    updateStatu = UPDATE_ONE_PAGE;
+    View view = pageList.get(position);
+    String countyName = choosedCountyList.get(position);
+    fillView(view, countyName, true);
+    adapter.notifyDataSetChanged();
+&#125;
+</code></pre>
+<h4 id="Weather展示"><a href="#Weather展示" class="headerlink" title="Weather展示"></a>Weather展示</h4><ul>
+<li><p>情况：默认情况每次都会生成新的活动，但是天气展示页面只需要一个就够</p>
+</li>
+<li><p>解决思路: 在manifest文件中设置WeatherActivity为singleTask</p>
+<pre><code>  &lt;activity android:name=&quot;.WeatherActivity&quot; android:launchMode=&quot;singleTask&quot;/&gt;
+</code></pre>
+</li>
+</ul>
+<h4 id="从城市添加页面跳转到Weather页面展示当前选中的城市"><a href="#从城市添加页面跳转到Weather页面展示当前选中的城市" class="headerlink" title="从城市添加页面跳转到Weather页面展示当前选中的城市"></a>从城市添加页面跳转到Weather页面展示当前选中的城市</h4><ul>
+<li>情况：从从城市添加页面跳转到Weather页面时默认显示之前Weather页面显示的城市情况</li>
+<li>解决思路：在<code>prefs = PreferenceManager.getDefaultSharedPreferences (this)</code>中保存当前选中的城市，随后在Weather活动中取出，根据城市名得到所在页面的索引，设置为当前页。<code>viewPager.setCurrentItem(position);</code></li>
+</ul>
+<h3 id="代码展示"><a href="#代码展示" class="headerlink" title="代码展示"></a>代码展示</h3><pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;manifest xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    package=&quot;com.coolweather.android&quot;&gt;
+
+    &lt;!-- 这个权限用于进行网络定位 --&gt;
+    &lt;uses-permission android:name=&quot;android.permission.ACCESS_COARSE_LOCATION&quot; /&gt; &lt;!-- 这个权限用于访问GPS定位 --&gt;
+    &lt;uses-permission android:name=&quot;android.permission.ACCESS_FINE_LOCATION&quot; /&gt; &lt;!-- 用于访问wifi网络信息，wifi信息会用于进行网络定位 --&gt;
+    &lt;uses-permission android:name=&quot;android.permission.ACCESS_WIFI_STATE&quot; /&gt; &lt;!-- 获取运营商信息，用于支持提供运营商信息相关的接口 --&gt;
+    &lt;uses-permission android:name=&quot;android.permission.ACCESS_NETWORK_STATE&quot; /&gt; &lt;!-- 这个权限用于获取wifi的获取权限，wifi信息会用来进行网络定位 --&gt;
+    &lt;uses-permission android:name=&quot;android.permission.CHANGE_WIFI_STATE&quot; /&gt; &lt;!-- 写入扩展存储，向扩展卡写入数据，用于写入离线定位数据 --&gt;
+    &lt;uses-permission android:name=&quot;android.permission.WRITE_EXTERNAL_STORAGE&quot; /&gt; &lt;!-- 访问网络，网络定位需要上网 --&gt;
+    &lt;uses-permission android:name=&quot;android.permission.INTERNET&quot; /&gt;
+    &lt;uses-permission android:name=&quot;android.permission.READ_PHONE_STATE&quot; /&gt;
+
+    &lt;application
+        android:name=&quot;org.litepal.LitePalApplication&quot;
+        android:allowBackup=&quot;true&quot;
+        android:icon=&quot;@mipmap/ic_launcher&quot;
+        android:label=&quot;@string/app_name&quot;
+        android:roundIcon=&quot;@mipmap/ic_launcher_round&quot;
+        android:supportsRtl=&quot;true&quot;
+        android:theme=&quot;@style/AppTheme&quot;&gt;
+        &lt;service
+            android:name=&quot;.AutoUpdateService&quot;
+            android:enabled=&quot;true&quot;
+            android:exported=&quot;true&quot;&gt;&lt;/service&gt;
+
+        &lt;meta-data
+            android:name=&quot;com.baidu.lbsapi.API_KEY&quot;
+            android:value=&quot;xxxxxx&quot; /&gt;
+
+        &lt;activity android:name=&quot;.ChooseAreaActivity&quot; /&gt;
+        &lt;activity android:name=&quot;.CountyChoosedActivity&quot; /&gt;
+
+        &lt;activity android:name=&quot;.WeatherActivity&quot;
+            android:launchMode=&quot;singleTask&quot;/&gt;
+
+        &lt;activity android:name=&quot;.MainActivity&quot;&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name=&quot;android.intent.action.MAIN&quot; /&gt;
+                &lt;category android:name=&quot;android.intent.category.LAUNCHER&quot; /&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+
+        &lt;service
+            android:name=&quot;com.baidu.location.f&quot;
+            android:enabled=&quot;true&quot;
+            android:process=&quot;:remote&quot; /&gt;
+    &lt;/application&gt;
+
+&lt;/manifest&gt;
+</code></pre>
+<p>MainActivity</p>
+<pre><code>package com.coolweather.android;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import android.Manifest;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.icu.text.UnicodeSetSpanner;
+import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.widget.Toast;
+
+import com.baidu.location.BDLocation;
+import com.baidu.location.BDLocationListener;
+import com.baidu.location.LocationClient;
+import com.baidu.location.LocationClientOption;
+import com.baidu.mapapi.SDKInitializer;
+import com.coolweather.android.db.ChoosedCounty;
+import com.coolweather.android.util.BDLocationUtil;
+import com.coolweather.android.util.Utility;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity &#123;
+
+
+    private LocationClient locationClient;
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) &#123;
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        if (prefs.getString(&quot;weather&quot;,null)!=null) &#123;
+            String countyName = prefs.getString(&quot;weatherCityName&quot;, &quot;北京&quot;);
+            SharedPreferences.Editor edit = prefs.edit();
+            edit.putString(&quot;curCounty&quot;, countyName);
+            edit.apply();
+            Utility.saveChoosedCounty(countyName);
+            Intent intent = new Intent(this, WeatherActivity.class);
+            startActivity(intent);
+            finish();
+        &#125; else &#123;
+            locationClient = new LocationClient(getApplicationContext());
+            locationClient.registerLocationListener(new BDLocationListener() &#123;
+                @Override
+                public void onReceiveLocation(final BDLocation location) &#123;
+                    String district = location.getDistrict();
+                    if (district == null)&#123;
+                        runOnUiThread(new Runnable() &#123;
+                            @Override
+                            public void run() &#123;
+                                Toast.makeText(MainActivity.this,
+                                        &quot;无法获取定位，重置定位为北京&quot;,
+                                        Toast.LENGTH_SHORT).show();
+                            &#125;
+                        &#125;);
+                        district = &quot;北京&quot;;
+                    &#125;
+                    locationClient.stop();
+                    Utility.saveChoosedCounty(district);
+                    SharedPreferences.Editor edit = prefs.edit();
+                    edit.putString(&quot;curCounty&quot;, district);
+                    edit.apply();
+                    Intent intent = new Intent(MainActivity.this, WeatherActivity.class);
+                    startActivity(intent);
+                    finish();
+                &#125;
+            &#125;);
+            SDKInitializer.initialize(getApplicationContext());
+            //申请权限
+            if (requestPermission())&#123;
+                requestLocation();
+            &#125;
+
+        &#125;
+    &#125;
+
+    private void requestLocation()&#123;
+        LocationClientOption option = new LocationClientOption();
+        option.setIsNeedAddress(true);
+        locationClient.setLocOption(option);
+        locationClient.start();
+    &#125;
+
+    /**
+     * 请求权限
+     */
+    private boolean requestPermission()&#123;
+        List&lt;String&gt; permissionList = new ArrayList&lt;&gt;();
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.
+                permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED) &#123;
+            permissionList.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        &#125;
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.
+                permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED) &#123;
+            permissionList.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        &#125;
+        if (ContextCompat.checkSelfPermission(MainActivity.this,
+                Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED)&#123;
+            permissionList.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        &#125;
+        if (ContextCompat.checkSelfPermission(MainActivity.this,
+                Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)&#123;
+            permissionList.add(Manifest.permission.READ_PHONE_STATE);
+        &#125;
+        if (!permissionList.isEmpty()) &#123;
+            String [] permissions = permissionList.toArray(new String[permissionList.
+                    size()]);
+            ActivityCompat.requestPermissions(MainActivity.this, permissions, 1);
+            return false;
+        &#125;
+        return true;
+    &#125;
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) &#123;
+        switch (requestCode) &#123;
+            case 1:
+                if (grantResults.length &gt; 0) &#123;
+                    for (int result : grantResults) &#123;
+                        if (result != PackageManager.PERMISSION_GRANTED) &#123;
+                            Toast.makeText(this, &quot;必须同意所有权限才能使用本程序&quot;,
+                                    Toast.LENGTH_SHORT).show();
+                            finish();
+                            return;
+                        &#125;
+                    &#125;
+                    requestLocation();
+                &#125; else &#123;
+                    Toast.makeText(this, &quot;发生未知错误&quot;, Toast.LENGTH_SHORT).show();
+                &#125;
+                break;
+            default:
+        &#125;
+    &#125;
+
+
+&#125;
+</code></pre>
+<p>WeatherActivity</p>
+<pre><code>package com.coolweather.android;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
+
+import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.Build;
+import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.util.ArraySet;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.bumptech.glide.Glide;
+import com.coolweather.android.db.ChoosedCounty;
+import com.coolweather.android.gson.Forecast;
+import com.coolweather.android.gson.Lifestyle;
+import com.coolweather.android.gson.Weather;
+import com.coolweather.android.util.HttpUtil;
+import com.coolweather.android.util.Utility;
+import com.coolweather.android.view.PocketSwipeRefreshLayout;
+
+
+import org.litepal.crud.DataSupport;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
+
+@RequiresApi(api = Build.VERSION_CODES.M)
+public class WeatherActivity extends AppCompatActivity &#123;
+
+    /**
+     * 采用singleTask模式，只存在一个weather活动
+     *
+     */
+    private static final String TAG = &quot;WeatherActivity&quot;;
+
+    private PocketSwipeRefreshLayout swipeRefreshLayout;
+    private ImageView bingPIcImg;
+    private Button navButton;
+    private TextView titleCityText;
+    private LinearLayout dotLayout;
+
+    private SharedPreferences prefs;
+
+    private ViewPager viewPager;
+    private PagerAdapter adapter;
+    //保存每个页面view
+    private ArrayList&lt;View&gt; pageList = new ArrayList&lt;&gt;();
+    private List&lt;ImageView&gt; dotImageList = new ArrayList&lt;&gt;();
+    //当前页索引
+    private int position;
+    //当前显示的城市
+    private String curCountyName;
+
+    //所有选中的城市
+    private List&lt;String&gt; choosedCountyList = new ArrayList&lt;&gt;();
+    //城市对应的位置
+    private HashMap&lt;String, Integer&gt; countyIndex = new HashMap&lt;&gt;();
+
+    //更新一个页面
+    private int UPDATE_ONE_PAGE = 0;
+    //更新所有页面
+    private int UPDATE_ALL_PAGE = 1;
+    //更新标记，用来切换下拉刷新更新一个页面 和 减少页面更新所有页面来去除缓存
+    private int updateStatu = UPDATE_ONE_PAGE;
+
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) &#123;
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_weather);
+        //实现状态栏配色统一
+        if (Build.VERSION.SDK_INT&gt;=21)&#123;
+            View decorView = getWindow().getDecorView();
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            getWindow().setStatusBarColor(Color.TRANSPARENT);
+        &#125;
+        setContentView(R.layout.activity_weather);
+        //数据初始化-- 将传入的数据赋值到对应的位置
+        choosedCountyList = initChoosedCounties();
+        prefs = PreferenceManager.getDefaultSharedPreferences
+                (this);
+        curCountyName = prefs.getString(&quot;curCounty&quot;,choosedCountyList.get(0));
+        position = getPositionFromName(curCountyName, choosedCountyList);
+
+        //圆点来显示当前页面的位置
+        dotLayout = (LinearLayout) findViewById(R.id.dot_layout);
+        for (int i = 0; i &lt; choosedCountyList.size(); i++) &#123;
+            ImageView imageView = new ImageView(WeatherActivity.this);
+            imageView.setLayoutParams(new ViewGroup.LayoutParams(30, 30));
+            imageView.setPadding(20, 0, 20, 0);
+            if (i == position) &#123;
+                // 默认选中第一张图片
+                imageView.setBackgroundResource(R.drawable.dot_focused);
+            &#125; else &#123;
+                imageView.setBackgroundResource(R.drawable.dot_normal);
+            &#125;
+            dotImageList.add(imageView);
+            dotLayout.addView(imageView);
+        &#125;
+
+
+        //下拉刷新
+        swipeRefreshLayout = (PocketSwipeRefreshLayout) findViewById(R.id.swipe_refresh);
+        swipeRefreshLayout.setColorSchemeResources(R.color.colorPrimary);
+        swipeRefreshLayout.setOnRefreshListener(new PocketSwipeRefreshLayout.OnRefreshListener() &#123;
+            @Override
+            public void onRefresh() &#123;
+                updatePageView();
+                Toast.makeText(WeatherActivity.this, &quot;刷新&quot;,
+                        Toast.LENGTH_SHORT).show();
+                swipeRefreshLayout.setRefreshing(false);
+            &#125;
+        &#125;);
+        //tupian
+        bingPIcImg = (ImageView) findViewById(R.id.bing_pic_img);
+        String bingPic = prefs.getString(&quot;bing_pic&quot;, null);
+        if (bingPic != null)&#123;
+            Glide.with(this).load(bingPic).into(bingPIcImg);
+        &#125;else &#123;
+            loadBingPIc();
+        &#125;
+        //添加按钮
+        navButton = (Button) findViewById(R.id.nav_button);
+        navButton.setOnClickListener(new View.OnClickListener() &#123;
+            @Override
+            public void onClick(View v) &#123;
+                Intent intent = new Intent(WeatherActivity.this,
+                        CountyChoosedActivity.class);
+                startActivity(intent);
+            &#125;
+        &#125;);
+
+        titleCityText = (TextView) findViewById(R.id.title_city);
+        titleCityText.setText(curCountyName);
+
+        //初始化pager，每个页面都是一个城市的天气
+        viewPager = (ViewPager) findViewById(R.id.weather_pager);
+        LayoutInflater layoutInflater = getLayoutInflater();
+        for (int i=0;i&lt;choosedCountyList.size(); i++)&#123;
+            View view = layoutInflater.inflate(R.layout.weather_layout, null);
+            view.setTag(i);
+            String countyName = choosedCountyList.get(i);
+            fillView(view, countyName,true);
+            pageList.add(view);
+        &#125;
+        adapter = new PagerAdapter() &#123;
+            @Override
+            public int getCount() &#123;
+                return pageList.size();
+            &#125;
+
+            @Override
+            public int getItemPosition(@NonNull Object object) &#123;
+                if (updateStatu == UPDATE_ONE_PAGE)&#123;
+                    //更新其中一个页面
+                    View view = (View) object;
+                    int currentPagerIdx = viewPager.getCurrentItem();
+                    if (currentPagerIdx == (Integer) view.getTag()) &#123;
+                        return POSITION_NONE;
+                    &#125; else &#123;
+                        return POSITION_UNCHANGED;
+                    &#125;
+                &#125;
+                else if (updateStatu == UPDATE_ALL_PAGE)&#123;
+                    //更新所有页面，目的为去除缓存
+                    return POSITION_NONE;
+                &#125;
+                return POSITION_NONE;
+            &#125;
+
+            @Override
+            public boolean isViewFromObject(@NonNull View view, @NonNull Object object) &#123;
+                return view==object;
+            &#125;
+
+            @Override
+            public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) &#123;
+                container.removeView((View) object);
+            &#125;
+
+            @NonNull
+            @Override
+            public Object instantiateItem(@NonNull ViewGroup container, int position) &#123;
+                container.addView(pageList.get(position));
+                return pageList.get(position);
+            &#125;
+        &#125;;
+        viewPager.setAdapter(adapter);
+        //侦测当前页面位置
+        viewPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() &#123;
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) &#123;
+            &#125;
+
+            @Override
+            public void onPageSelected(int position) &#123;
+                WeatherActivity.this.position = position;
+                curCountyName = choosedCountyList.get(position);
+                titleCityText.setText(curCountyName);
+                for (int i=0;i&lt;dotImageList.size(); i++)&#123;
+                    dotImageList.get(i).setBackgroundResource(R.drawable.dot_normal);
+                &#125;
+                dotImageList.get(position).setBackgroundResource(R.drawable.dot_focused);
+            &#125;
+
+            @Override
+            public void onPageScrollStateChanged(int state) &#123;
+
+            &#125;
+        &#125;);
+
+        viewPager.setCurrentItem(position);
+        viewPager.setOffscreenPageLimit(8);
+
+    &#125;
+
+    private int getPositionFromName(String name,List&lt;String&gt; list)&#123;
+        for (int i = 0; i &lt; list.size(); i++) &#123;
+            if (name.equals(list.get(i)))&#123;
+                return i;
+            &#125;
+        &#125;
+        return -1;
+    &#125;
+
+    public  boolean equalList(List&lt;String&gt; a, List&lt;String&gt; b) &#123;
+        if (a==b) return true;
+        if (a==null || b==null) return false;
+        int length = a.size();
+        if (b.size() != length) return false;
+        for (int i=0; i&lt;length; i++)
+            if (!a.get(i).equals(b.get(i))) return false;
+        return true;
+    &#125;
+
+    /**
+     * 当重新激活后，
+     * 1)比较选择城市是否发生改变，若无，显示当前选中的城市页面
+     * 2 发生改变，添加或减少页面
+     */
+    @Override
+    protected void onRestart() &#123;
+        super.onRestart();
+        //当前选择的城市列表
+        List&lt;String&gt; curList = initChoosedCounties();
+        curCountyName = prefs.getString(&quot;curCounty&quot;, curList.get(0));
+        position = getPositionFromName(curCountyName, curList);
+        //改变圆点位置
+        dotImageList.clear();
+        dotLayout.removeAllViews();
+        for (int i = 0; i &lt; curList.size(); i++) &#123;
+            ImageView imageView = new ImageView(WeatherActivity.this);
+            imageView.setLayoutParams(new ViewGroup.LayoutParams(30, 30));
+            imageView.setPadding(20, 0, 20, 0);
+            dotImageList.add(imageView);
+            dotLayout.addView(imageView);
+        &#125;
+
+        //当前变化
+        if (!equalList(curList, choosedCountyList))&#123;
+            LayoutInflater layoutInflater = getLayoutInflater();
+            pageList.clear();
+            for (int i=0; i&lt; curList.size();i++)&#123;
+                //以前的没有，新增的城市，新增页面
+                View view = layoutInflater.inflate(R.layout.weather_layout, null);
+                view.setTag(i);
+                String countyName = curList.get(i);
+                fillView(view, countyName,false);
+                pageList.add(i, view);
+            &#125;
+            updateStatu = UPDATE_ALL_PAGE;
+            adapter.notifyDataSetChanged();
+
+        &#125;
+        //一定要在选择页面前更新城市列表，不然增加城市时onPageSelected出现超过索引的问题
+        choosedCountyList = curList;
+        viewPager.setCurrentItem(position);
+    &#125;
+
+    private List&lt;String&gt; initChoosedCounties()&#123;
+        List&lt;ChoosedCounty&gt; all = DataSupport.findAll(ChoosedCounty.class);
+        List&lt;String&gt; curList = new ArrayList&lt;&gt;();
+        for (int i=0; i&lt;all.size(); i++)&#123;
+            curList.add(all.get(i).getCountyName());
+        &#125;
+        return curList;
+    &#125;
+
+    /**
+     * 根据城市名获取内容，并填充view
+     * @param countyName
+     * @param isUpdate 是否更新天气数据
+     */
+    private void fillView(View view, String countyName, boolean isUpdate)&#123;
+        if (isUpdate)&#123;
+            requestWeather(view,countyName);
+        &#125;else &#123;
+            String weatherString = prefs.getString(countyName, null);
+            Weather weather = null;
+            if (weatherString == null)&#123;
+                // 无缓存时去服务器查询天气
+                requestWeather(view, countyName);
+            &#125;else &#123;
+                weather = Utility.handleWeatherResponse(weatherString);
+                showWeatherInfo(view, weather);
+            &#125;
+        &#125;
+
+    &#125;
+
+    /**
+     * 根据城市名来查询天气
+     * 支持中英文与拼音，
+     * @param city
+     */
+    public void requestWeather(final View view, final String city)&#123;
+        String weatherUrl = &quot;https://free-api.heweather.net/s6/weather/?location=&quot;
+                +city+&quot;&amp;key=自己和风天气的key&quot;;
+        HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() &#123;
+            @Override
+            public void onFailure(Call call, IOException e) &#123;
+                e.printStackTrace();
+                runOnUiThread(new Runnable() &#123;
+                    @Override
+                    public void run() &#123;
+                        Toast.makeText(WeatherActivity.this, &quot;获取天气信息失败&quot;,
+                                Toast.LENGTH_SHORT).show();
+                        swipeRefreshLayout.setRefreshing(false);
+                    &#125;
+                &#125;);
+            &#125;
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException &#123;
+                final String responseText = response.body().string();
+                final Weather weather = Utility.handleWeatherResponse(responseText);
+                runOnUiThread(new Runnable() &#123;
+                    @Override
+                    public void run() &#123;
+                        if (weather!=null &amp;&amp; &quot;ok&quot;.equals(weather.status))&#123;
+                            @SuppressLint(&quot;CommitPrefEdits&quot;)
+                            SharedPreferences.Editor edit = prefs.edit();
+                            edit.putString(city, responseText);
+                            edit.apply();
+                            showWeatherInfo(view, weather);
+                        &#125;else &#123;
+                            Toast.makeText(WeatherActivity.this,&quot;获取天气信息失败&quot;,
+                                    Toast.LENGTH_SHORT).show();
+                        &#125;
+                        swipeRefreshLayout.setRefreshing(false);
+                    &#125;
+                &#125;);
+            &#125;
+        &#125;);
+        loadBingPIc();
+    &#125;
+
+    /**
+     * 处理并展示Weather实体类数据信息
+     * @param weather
+     */
+    private void showWeatherInfo(View view, Weather weather)&#123;
+        // 初始化各控件
+        ScrollView weatherLayout = (ScrollView) view.findViewById(R.id.weather_layout);
+        //解决SwipeRefreshLayout与ScrollView的下拉冲突
+        weatherLayout.setOnScrollChangeListener(new View.OnScrollChangeListener() &#123;
+            @Override
+            public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) &#123;
+                if (swipeRefreshLayout != null)&#123;
+                    swipeRefreshLayout.setEnabled(scrollY==0);
+                &#125;
+            &#125;
+        &#125;);
+        TextView updateTimeText = (TextView) view.findViewById(R.id.update_time);
+        TextView degreeText = (TextView) view.findViewById(R.id.degree_text);
+        TextView weatherInfoText = (TextView) view.findViewById(R.id.weather_info_text);
+        LinearLayout forecastLayout = (LinearLayout) view.findViewById(R.id.forecast_layout);
+        LinearLayout lifestyleLayout  = (LinearLayout) view.findViewById(R.id.lifestyle_layout);
+        String updateTime = weather.update.loc;
+        String degree = weather.now.tmp+&quot;℃&quot;;
+        String weatherInfo = weather.now.cond_txt;
+        //填充内容
+        updateTimeText.setText(updateTime);
+        degreeText.setText(degree);
+        weatherInfoText.setText(weatherInfo);
+        forecastLayout.removeAllViews();
+        for (Forecast forecast:weather.daily_forecast)&#123;
+            View viewN = LayoutInflater.from(this).inflate(R.layout.forecast_item,
+                    forecastLayout, false);
+            TextView dateText = (TextView) viewN.findViewById(R.id.date_text);
+            TextView infoText = (TextView) viewN.findViewById(R.id.info_text);
+            TextView minText = (TextView) viewN.findViewById(R.id.min_text);
+            TextView maxText = (TextView) viewN.findViewById(R.id.max_text);
+
+            dateText.setText(forecast.date);
+            infoText.setText(forecast.cond_txt_d);
+            minText.setText(forecast.tmp_min);
+            maxText.setText(forecast.tmp_max);
+            forecastLayout.addView(viewN);
+        &#125;
+        lifestyleLayout.removeAllViews();
+        for (Lifestyle lifestyle:weather.lifestyles)&#123;
+            View viewN = LayoutInflater.from(this).inflate(R.layout.lifestyle_item,
+                    lifestyleLayout, false);
+            TextView lifestyle_text_text = (TextView) viewN.findViewById(R.id.lifestyle_text_text);
+            TextView lifestyle_type_text = (TextView) viewN.findViewById(R.id.lifestyle_type_text);
+            lifestyle_type_text.setText(Utility.translate(lifestyle.type) +&quot; &quot;+ lifestyle.brf);
+            lifestyle_text_text.setText(lifestyle.txt);
+            lifestyleLayout.addView(viewN);
+        &#125;
+        weatherLayout.setVisibility(View.VISIBLE);
+    &#125;
+
+    /**
+     * 更新当前页天气
+     */
+    private void updatePageView()&#123;
+        updateStatu = UPDATE_ONE_PAGE;
+        View view = pageList.get(position);
+        String countyName = choosedCountyList.get(position);
+        fillView(view, countyName, true);
+        adapter.notifyDataSetChanged();
+    &#125;
+
+    private void loadBingPIc()&#123;
+        String requestBingPicUrl = &quot;http://guolin.tech/api/bing_pic&quot;;
+        HttpUtil.sendOkHttpRequest(requestBingPicUrl, new Callback() &#123;
+            @Override
+            public void onFailure(Call call, IOException e) &#123;
+                e.printStackTrace();
+            &#125;
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException &#123;
+                final String pic = response.body().string();
+                SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(WeatherActivity.this).edit();
+                edit.putString(&quot;bing_pic&quot;, pic);
+                edit.apply();
+                runOnUiThread(new Runnable() &#123;
+                    @Override
+                    public void run() &#123;
+                        Glide.with(WeatherActivity.this).load(pic).into(bingPIcImg);
+                    &#125;
+                &#125;);
+            &#125;
+        &#125;);
+
+
+    &#125;
+
+&#125;
+</code></pre>
+<p>CountyChoosedActivity<br>展示已选中的城市列表和删除城市列表</p>
+<pre><code>package com.coolweather.android;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+
+import android.annotation.SuppressLint;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.util.ArraySet;
+import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.baidu.location.BDLocation;
+import com.baidu.location.BDLocationListener;
+import com.baidu.location.LocationClient;
+import com.baidu.location.LocationClientOption;
+import com.coolweather.android.db.ChoosedCounty;
+import com.coolweather.android.util.BDLocationUtil;
+import com.coolweather.android.util.Utility;
+
+import org.litepal.crud.DataSupport;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
+import static org.litepal.LitePalApplication.getContext;
+
+public class CountyChoosedActivity extends AppCompatActivity &#123;
+
+    private static final String TAG = &quot;CountyChoosedActivity&quot;;
+    private SharedPreferences prefs;
+    private Button addCountyButton;
+    private ListView listView;
+    private Button locationCityButton;
+    private ArrayAdapter&lt;String&gt; adapter;
+    private List&lt;String&gt; countyList = new ArrayList&lt;&gt;();
+    private List&lt;ChoosedCounty&gt; countyListDB = new ArrayList&lt;&gt;();
+
+    private LocationClient locationClient;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) &#123;
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_county_choosed);
+        prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        queryChoosedCountyList();
+        addCountyButton = (Button) findViewById(R.id.add_county_button);
+        listView = (ListView) findViewById(R.id.county_list_choosed_view);
+        locationCityButton = (Button) findViewById(R.id.location_city_button);
+
+        startLocation();
+
+        addCountyButton.setOnClickListener(new View.OnClickListener() &#123;
+            @Override
+            public void onClick(View v) &#123;
+                Intent intent = new Intent(getContext(), ChooseAreaActivity.class);
+                startActivity(intent);
+                finish();
+            &#125;
+        &#125;);
+
+        adapter = new ArrayAdapter&lt;String&gt;(CountyChoosedActivity.this,
+                android.R.layout.simple_list_item_1, countyList);
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() &#123;
+            @Override
+            public void onItemClick(AdapterView&lt;?&gt; parent, View view, int position, long id) &#123;
+                String s = countyList.get(position);
+                SharedPreferences.Editor edit = prefs.edit();
+                edit.putString(&quot;curCounty&quot;, s);
+                edit.apply();
+                Intent intent = new Intent(getContext(), WeatherActivity.class);
+                startActivity(intent);
+                finish();
+            &#125;
+        &#125;);
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() &#123;
+            @Override
+            public boolean onItemLongClick(AdapterView&lt;?&gt; parent, View view, final int position, long id) &#123;
+                //定义AlertDialog.Builder对象，当长按列表项的时候弹出确认删除对话框
+                AlertDialog.Builder builder=new AlertDialog.Builder(CountyChoosedActivity.this);
+                builder.setMessage(&quot;确定删除?&quot;);
+                builder.setTitle(&quot;提示&quot;);
+
+                //添加AlertDialog.Builder对象的setPositiveButton()方法
+                builder.setPositiveButton(&quot;确定&quot;, new DialogInterface.OnClickListener() &#123;
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) &#123;
+                        String countyName= countyList.get(position);
+                        if(countyList.remove(position)!=null)&#123;
+                            DataSupport.deleteAll(ChoosedCounty.class,
+                                    &quot;countyName = ?&quot;, countyName);
+                            System.out.println(&quot;success&quot;);
+                        &#125;else &#123;
+                            System.out.println(&quot;failed&quot;);
+                        &#125;
+                        adapter.notifyDataSetChanged();
+                        Toast.makeText(getBaseContext(), &quot;删除列表项&quot;, Toast.LENGTH_SHORT).show();
+                    &#125;
+                &#125;);
+
+                //添加AlertDialog.Builder对象的setNegativeButton()方法
+                builder.setNegativeButton(&quot;取消&quot;, new DialogInterface.OnClickListener() &#123;
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) &#123;
+
+                    &#125;
+                &#125;);
+
+                AlertDialog alertDialog = builder.create();
+                alertDialog.setCanceledOnTouchOutside(false);
+                alertDialog.show();
+                return true;
+
+            &#125;
+        &#125;);
+
+    &#125;
+
+    private void startLocation()&#123;
+        locationClient = new LocationClient(getApplicationContext());
+        locationClient.registerLocationListener(new BDLocationListener() &#123;
+            @Override
+            public void onReceiveLocation(final BDLocation location) &#123;
+                String district = location.getDistrict();
+                if (district == null)&#123;
+                    runOnUiThread(new Runnable() &#123;
+                        @Override
+                        public void run() &#123;
+                            Toast.makeText(CountyChoosedActivity.this,
+                                    &quot;无法获取定位，重置定位为北京&quot;,
+                                    Toast.LENGTH_SHORT).show();
+                        &#125;
+                    &#125;);
+                    district = &quot;北京&quot;;
+                    locationCityButton.setText( district+&quot;--重新定位&quot;);
+                &#125;else &#123;
+                    locationCityButton.setText( district+&quot;--定位&quot;);
+                &#125;
+                locationClient.stop();
+                final String finalDistrict = district;
+                locationCityButton.setOnClickListener(new View.OnClickListener() &#123;
+                    @Override
+                    public void onClick(View v) &#123;
+                        SharedPreferences.Editor edit = prefs.edit();
+                        Utility.saveChoosedCounty(finalDistrict);
+                        edit.putString(&quot;curCounty&quot;, finalDistrict);
+                        edit.apply();
+                        Intent intent = new Intent(CountyChoosedActivity.this, WeatherActivity.class);
+                        startActivity(intent);
+                        finish();
+                    &#125;
+                &#125;);
+            &#125;
+        &#125;);
+        LocationClientOption option = new LocationClientOption();
+        option.setIsNeedAddress(true);
+        locationClient.setLocOption(option);
+        locationClient.start();
+    &#125;
+
+
+    private void queryChoosedCountyList()&#123;
+        countyListDB = DataSupport.findAll(ChoosedCounty.class);
+        for (ChoosedCounty county:countyListDB)&#123;
+            countyList.add(county.getCountyName());
+        &#125;
+    &#125;
+
+
+&#125;
+</code></pre>
+<p>ChooseAreaActivity和ChooseAreaFragment，用来新增城市</p>
+<pre><code>package com.coolweather.android;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.os.Bundle;
+
+
+public class ChooseAreaActivity extends AppCompatActivity &#123;
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) &#123;
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_choose_area);
+    &#125;
+
+&#125;
+</code></pre>
+<ul>
+<li></li>
+</ul>
+<pre><code>package com.coolweather.android;
+
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+
+import com.coolweather.android.db.City;
+import com.coolweather.android.db.County;
+import com.coolweather.android.db.Province;
+import com.coolweather.android.util.HttpUtil;
+import com.coolweather.android.util.Utility;
+
+import org.litepal.crud.DataSupport;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
+
+public class ChooseAreaFragment extends Fragment &#123;
+
+    private SharedPreferences prefs;
+    public static final int LEVEL_PROVINCE = 0;
+    public static final int LEVEL_CITY = 1;
+    public static final int LEVEL_COUNTY = 2;
+    private ProgressDialog progressDialog;
+    private TextView titleText;
+    private Button backButton;
+    private ListView listView;
+    private ArrayAdapter&lt;String&gt; adapter;
+    private List&lt;String&gt; dataList = new ArrayList&lt;&gt;();
+    /**
+     * 省列表
+     */
+    private List&lt;Province&gt; provinceList;
+    /**
+     * 市列表
+     */
+    private List&lt;City&gt; cityList;
+    /**
+     * 县列表
+     */
+    private List&lt;County&gt; countyList;
+
+    /**
+     * 选中的省份
+    */
+    private Province selectedProvince;
+    /**
+     * 选中的城市
+     */
+    private City selectedCity;
+    /**
+     * 当前选中的级别
+     */
+    private int currentLevel;
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) &#123;
+        prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+        View view = inflater.inflate(R.layout.choose_area, container, false);
+        titleText = (TextView)view.findViewById(R.id.title_text);
+        backButton = (Button) view.findViewById(R.id.back_button);
+        listView = (ListView) view.findViewById(R.id.list_view);
+
+        adapter = new ArrayAdapter&lt;&gt;(getContext(), android.R.layout.simple_list_item_1, dataList);
+        listView.setAdapter(adapter);
+        return view;
+    &#125;
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) &#123;
+        super.onActivityCreated(savedInstanceState);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() &#123;
+            @Override
+            public void onItemClick(AdapterView&lt;?&gt; parent, View view, int position, long id) &#123;
+                if (currentLevel == LEVEL_PROVINCE)&#123;
+                    selectedProvince = provinceList.get(position);
+                    queryCities();
+                &#125;else if (currentLevel == LEVEL_CITY)&#123;
+                    selectedCity = cityList.get(position);
+                    queryCounties();
+                &#125;else if (currentLevel== LEVEL_COUNTY)&#123;
+                    String countyName = countyList.get(position).getCountyName();
+                    Intent intent = new Intent(getActivity(), WeatherActivity.class);
+                    //保存添加的城市
+                    Utility.saveChoosedCounty(countyName);
+                    SharedPreferences.Editor edit = prefs.edit();
+                    edit.putString(&quot;curCounty&quot;, countyName);
+                    edit.apply();
+                    startActivity(intent);
+                    getActivity().finish();
+
+                &#125;
+            &#125;
+        &#125;);
+
+        backButton.setOnClickListener(new View.OnClickListener() &#123;
+            @Override
+            public void onClick(View v) &#123;
+                if (currentLevel == LEVEL_COUNTY) &#123;
+                    queryCities();
+                &#125; else if (currentLevel == LEVEL_CITY) &#123;
+                    queryProvinces();
+                &#125;else if(currentLevel == LEVEL_PROVINCE)&#123;
+                    Intent intent = new Intent(getActivity(), CountyChoosedActivity.class);
+                    startActivity(intent);
+                    getActivity().finish();
+                &#125;
+            &#125;
+        &#125;);
+        //初始化省份数据
+        queryProvinces();
+    &#125;
+
+    /**
+     * 查询全国所有的省， 优先从数据库查询， 如果没有查询到再去服务器上查询
+    */
+    private void queryProvinces() &#123;
+        titleText.setText(&quot;中国&quot;);
+        backButton.setVisibility(View.VISIBLE);
+        provinceList = DataSupport.findAll(Province.class);
+        if (provinceList.size() &gt; 0) &#123;
+            dataList.clear();
+            for (Province province : provinceList) &#123;
+                dataList.add(province.getProvinceName());
+            &#125;
+            adapter.notifyDataSetChanged();
+            listView.setSelection(0);
+            currentLevel = LEVEL_PROVINCE;
+        &#125; else &#123;
+            String address = &quot;http://guolin.tech/api/china&quot;;
+            queryFromServer(address, &quot;province&quot;);
+        &#125;
+    &#125;
+
+    /**
+     * 查询选中省内所有的市， 优先从数据库查询， 如果没有查询到再去服务器上查询
+    */
+    private void queryCities() &#123;
+        titleText.setText(selectedProvince.getProvinceName());backButton.setVisibility(View.VISIBLE);
+        cityList = DataSupport.where(&quot;provinceid = ?&quot;,
+                String.valueOf(selectedProvince.getId())).find(City.class);
+        if (cityList.size() &gt; 0) &#123;
+            dataList.clear();
+            for (City city : cityList) &#123;
+                dataList.add(city.getCityName());
+            &#125;
+            adapter.notifyDataSetChanged();
+            listView.setSelection(0);
+            currentLevel = LEVEL_CITY;
+        &#125; else &#123;
+            int provinceCode = selectedProvince.getProvinceCode();
+            String address = &quot;http://guolin.tech/api/china/&quot; + provinceCode;
+            queryFromServer(address, &quot;city&quot;);
+        &#125;
+    &#125;
+
+    /**
+     * 查询选中市内所有的县， 优先从数据库查询， 如果没有查询到再去服务器上查询
+    */
+    private void queryCounties() &#123;
+        titleText.setText(selectedCity.getCityName());
+        backButton.setVisibility(View.VISIBLE);
+        countyList = DataSupport.where(&quot;cityid = ?&quot;,
+                String.valueOf(selectedCity.
+                getId())).find(County.class);
+        if (countyList.size() &gt; 0) &#123;
+            dataList.clear();
+            for (County county : countyList) &#123;
+                dataList.add(county.getCountyName());
+            &#125;
+            adapter.notifyDataSetChanged();
+            listView.setSelection(0);
+            currentLevel = LEVEL_COUNTY;
+        &#125; else &#123;
+            int provinceCode = selectedProvince.getProvinceCode();
+            int cityCode = selectedCity.getCityCode();
+            String address = &quot;http://guolin.tech/api/china/&quot; + provinceCode + &quot;/&quot; +
+                    cityCode;
+            queryFromServer(address, &quot;county&quot;);
+        &#125;
+    &#125;
+
+    /**
+     * 根据传入的地址和类型从服务器上查询省市县数据
+    */
+    private void queryFromServer(String address, final String type) &#123;
+        showProgressDialog();
+        HttpUtil.sendOkHttpRequest(address, new Callback() &#123;
+            @Override
+            public void onResponse(Call call, Response response) throws IOException &#123;
+                String responseText = response.body().string();
+                boolean result = false;
+                if (&quot;province&quot;.equals(type)) &#123;
+                    result = Utility.handleProvinceResponse(responseText);
+                &#125; else if (&quot;city&quot;.equals(type)) &#123;
+                    result = Utility.handleCityResponse(responseText,
+                            selectedProvince.getId());
+                &#125; else if (&quot;county&quot;.equals(type)) &#123;
+                    result = Utility.handleCountyResponse(responseText,
+                            selectedCity.getId());
+                &#125;
+                if (result) &#123;
+                    getActivity().runOnUiThread(new Runnable() &#123;@Override
+                    public void run() &#123;
+                        closeProgressDialog();
+                        if (&quot;province&quot;.equals(type)) &#123;
+                            queryProvinces();
+                        &#125; else if (&quot;city&quot;.equals(type)) &#123;
+                            queryCities();
+                        &#125; else if (&quot;county&quot;.equals(type)) &#123;
+                            queryCounties();
+                        &#125;
+                    &#125;
+                    &#125;);
+                &#125;
+            &#125;
+
+            @Override
+            public void onFailure(Call call, IOException e) &#123;
+            // 通过runOnUiThread()方法回到主线程处理逻辑
+                getActivity().runOnUiThread(new Runnable() &#123;
+                    @Override
+                    public void run() &#123;
+                        closeProgressDialog();
+                        Toast.makeText(getContext(), &quot;加载失败&quot;, Toast.LENGTH_SHORT).
+                                show();
+                    &#125;
+                &#125;);
+            &#125;
+        &#125;);
+    &#125;
+
+    /**
+     * 显示进度对话框
+    */
+    private void showProgressDialog() &#123;
+        if (progressDialog == null) &#123;
+            progressDialog = new ProgressDialog(getActivity());
+            progressDialog.setMessage(&quot;正在加载...&quot;);
+            progressDialog.setCanceledOnTouchOutside(false);
+        &#125;
+        progressDialog.show();
+    &#125;
+    /**
+     * 关闭进度对话框
+    */
+    private void closeProgressDialog() &#123;
+        if (progressDialog != null) &#123;
+            progressDialog.dismiss();
+        &#125;
+    &#125;
+&#125;
+</code></pre>
+<p>AutoUpdateService后台服务，用来自动更新天气</p>
+<pre><code>package com.coolweather.android;
+
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.IBinder;
+import android.os.SystemClock;
+import android.preference.PreferenceManager;
+
+import com.bumptech.glide.Glide;
+import com.coolweather.android.db.ChoosedCounty;
+import com.coolweather.android.gson.Weather;
+import com.coolweather.android.util.BDLocationUtil;
+import com.coolweather.android.util.HttpUtil;
+import com.coolweather.android.util.Utility;
+
+import org.litepal.crud.DataSupport;
+
+import java.io.IOException;
+import java.util.List;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
+
+public class AutoUpdateService extends Service &#123;
+    public AutoUpdateService() &#123;
+    &#125;
+
+    @Override
+    public IBinder onBind(Intent intent) &#123;
+        return null;
+    &#125;
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) &#123;
+        updateBingPic();
+        //更新天气
+        String districtLocation = BDLocationUtil.getLocationDistrict(getApplicationContext());
+        updateWeather(districtLocation);
+        List&lt;ChoosedCounty&gt; list = DataSupport.findAll(ChoosedCounty.class);
+        for(ChoosedCounty county:list)&#123;
+            updateWeather(county.getCountyName());
+        &#125;
+
+        AlarmManager manager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        int time = 8 * 60 * 60 * 1000;
+        long triggerTime = SystemClock.elapsedRealtime()+time;
+        Intent intentA = new Intent(this, AutoUpdateService.class);
+        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intentA, 0);
+        manager.cancel(pendingIntent);
+        manager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, pendingIntent);
+        return super.onStartCommand(intent, flags, startId);
+    &#125;
+
+    private void updateWeather(final String name)&#123;
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+        //和风天气
+        String weatherUrl =  &quot;https://free-api.heweather.net/s6/weather/?location=&quot;
+                +name+&quot;&amp;key=自己的key&quot;;
+        HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() &#123;
+            @Override
+            public void onFailure(Call call, IOException e) &#123;
+                e.printStackTrace();
+            &#125;
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException &#123;
+                String reponseText = response.body().string();
+                Weather weather = Utility.handleWeatherResponse(reponseText);
+                if (weather!=null  &amp;&amp; &quot;ok&quot;.equals(weather.status))&#123;
+                    SharedPreferences.Editor edit = PreferenceManager.
+                            getDefaultSharedPreferences(AutoUpdateService.this).edit();
+                    edit.putString(name, reponseText);
+                    edit.apply();
+                &#125;
+            &#125;
+        &#125;);
+    &#125;
+
+    private void updateBingPic()&#123;
+        String requestBingPicUrl = &quot;http://guolin.tech/api/bing_pic&quot;;
+        HttpUtil.sendOkHttpRequest(requestBingPicUrl, new Callback() &#123;
+            @Override
+            public void onFailure(Call call, IOException e) &#123;
+                e.printStackTrace();
+            &#125;
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException &#123;
+                final String pic = response.body().string();
+                SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(AutoUpdateService.this).edit();
+                edit.putString(&quot;bing_pic&quot;, pic);
+                edit.apply();
+            &#125;
+        &#125;);
+    &#125;
+&#125;
+</code></pre>
+<p>Utility和HttpUtil工具类</p>
+<pre><code>package com.coolweather.android.util;
+
+import android.text.TextUtils;
+import com.coolweather.android.db.ChoosedCounty;
+import com.coolweather.android.db.City;
+import com.coolweather.android.db.County;
+import com.coolweather.android.db.Province;
+import com.coolweather.android.gson.Weather;
+import com.google.gson.Gson;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.litepal.crud.DataSupport;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class Utility &#123;
+
+    /**
+     * 解析处理服务器返回的省级数据
+     */
+    public static boolean handleProvinceResponse(String response)&#123;
+        if (!TextUtils.isEmpty(response))&#123;
+            try&#123;
+                JSONArray allProvinces = new JSONArray(response);
+                for (int i = 0; i &lt; allProvinces.length(); i++) &#123;
+                    JSONObject provinceObject = allProvinces.getJSONObject(i);
+                    Province province = new Province();
+                    province.setProvinceName(provinceObject.getString(&quot;name&quot;));
+                    province.setProvinceCode(provinceObject.getInt(&quot;id&quot;));
+                    province.save();
+                &#125;
+                return true;
+            &#125; catch (JSONException e) &#123;
+                e.printStackTrace();
+            &#125;
+
+        &#125;
+        return false;
+    &#125;
+
+    /**
+     * 解析处理服务器返回的市ji数据
+     * @param response
+     * @param provinceId
+     * @return
+     */
+    public static boolean handleCityResponse(String response, int provinceId)&#123;
+        if (!TextUtils.isEmpty(response)) &#123;
+            try &#123;
+                JSONArray allCities = new JSONArray(response);
+                for (int i = 0; i &lt; allCities.length(); i++) &#123;
+                    JSONObject cityObject = allCities.getJSONObject(i);
+                    City city = new City();
+                    city.setCityName(cityObject.getString(&quot;name&quot;));
+                    city.setCityCode(cityObject.getInt(&quot;id&quot;));
+                    city.setProvinceId(provinceId);
+                    city.save();
+                &#125;
+                return true;
+            &#125; catch (JSONException e) &#123;
+                e.printStackTrace();
+            &#125;
+        &#125;
+        return false;
+    &#125;
+
+    /**
+     * 解析和处理服务器返回的县级数据
+    */
+    public static boolean handleCountyResponse(String response, int cityId) &#123;
+        if (!TextUtils.isEmpty(response)) &#123;
+            try &#123;
+                JSONArray allCounties = new JSONArray(response);
+                for (int i = 0; i &lt; allCounties.length(); i++) &#123;
+                    JSONObject countyObject = allCounties.getJSONObject(i);
+                    County county = new County();
+                    county.setCountyName(countyObject.getString(&quot;name&quot;));
+                    county.setWeatherId(countyObject.getString(&quot;weather_id&quot;));
+                    county.setCityId(cityId);
+                    county.save();
+                &#125;
+                return true;
+            &#125; catch (JSONException e) &#123;
+                e.printStackTrace();
+            &#125;
+        &#125;
+        return false;
+    &#125;
+
+    public static Weather handleWeatherResponse(String response)&#123;
+        try &#123;
+            JSONObject jsonObject = new JSONObject(response);
+            JSONArray jsonArray = jsonObject.getJSONArray(&quot;HeWeather6&quot;);
+            String weatherContent = jsonArray.getJSONObject(0).toString();
+            return new Gson().fromJson(weatherContent, Weather.class);
+        &#125; catch (Exception e) &#123;
+            e.printStackTrace();
+        &#125;
+        return null;
+    &#125;
+
+    private static final Map&lt;String, String&gt; myMap;
+    static
+    &#123;
+        myMap = new HashMap&lt;String, String&gt;();
+        myMap.put(&quot;comf&quot;,&quot;舒适度指数&quot;);
+        myMap.put(&quot;cw&quot;,&quot;洗车指数&quot;);
+        myMap.put(&quot;drsg&quot;,&quot;穿衣指数&quot;);
+        myMap.put(&quot;flu&quot;,&quot;感冒指数&quot;);
+        myMap.put(&quot;ptfc&quot;,&quot;交通指数&quot;);
+        myMap.put(&quot;trav&quot;,&quot;旅游指数&quot;);
+        myMap.put(&quot;sport&quot;,&quot;运动指数&quot;);
+        myMap.put(&quot;uv&quot;,&quot;紫外线指数&quot;);
+        myMap.put(&quot;air&quot;,&quot;空气污染扩散条件指数&quot;);
+        myMap.put(&quot;ac&quot;,&quot;空调开启指数&quot;);
+        myMap.put(&quot;ag&quot;,&quot;过敏指数&quot;);
+        myMap.put(&quot;gl&quot;,&quot;太阳镜指数&quot;);
+        myMap.put(&quot;mu&quot;,&quot;化妆指数&quot;);
+        myMap.put(&quot;airc&quot;,&quot;晾晒指数&quot;);
+        myMap.put(&quot;fsh&quot;,&quot;钓鱼指数&quot;);
+        myMap.put(&quot;spi&quot;,&quot;防晒指数&quot;);
+    &#125;
+
+    public static String translate(String type)&#123;
+        return myMap.get(type);
+    &#125;
+
+
+    public static void saveChoosedCounty(String countyName)&#123;
+        //去重
+        List&lt;ChoosedCounty&gt; all = DataSupport.findAll(ChoosedCounty.class);
+        for (ChoosedCounty county: all)&#123;
+            if (countyName.equals(county.getCountyName()))&#123;
+                return;
+            &#125;
+        &#125;
+        ChoosedCounty county = new ChoosedCounty(countyName);
+        county.save();
+    &#125;
+
+&#125;
+
+package com.coolweather.android.util;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+
+public class HttpUtil &#123;
+
+    public static void sendOkHttpRequest(String address, okhttp3.Callback callback)&#123;
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder().url(address).build();
+        client.newCall(request).enqueue(callback);
+    &#125;
+&#125;
+</code></pre>
+<p><em><a href="https://github.com/BARKTEGH/CoolWeather" title="Github地址">项目的github地址</a></em></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Android/" rel="tag"># Android</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/08/02/InnoDB/" rel="prev" title="InnoDB存储引擎（一）- InnoDB体系结构">
+                  <i class="fa fa-angle-left"></i> InnoDB存储引擎（一）- InnoDB体系结构
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/04/25/Scoop/" rel="next" title="Scoop -window下包管理器">
+                  Scoop -window下包管理器 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">三十而立</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">61k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">3:40</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+</body>
+</html>
