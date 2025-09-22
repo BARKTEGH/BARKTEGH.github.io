@@ -1015,48 +1015,94 @@ actions.register(SearchAction.INSTANCE, TransportSearchAction.class);
       </tags>
   </entry>
   <entry>
-    <title>分布式一致性协议</title>
-    <url>/2019/07/19/Paxos/</url>
-    <content><![CDATA[<h2 id="Paxos算法"><a href="#Paxos算法" class="headerlink" title="Paxos算法"></a>Paxos算法</h2><p>Paxos算法核心是一个一致性算法。<br>在该一致性算法中，有三种参与角色，Proposer，Acceptor和Learner。</p>
-<h3 id="选定提案算法流程："><a href="#选定提案算法流程：" class="headerlink" title="选定提案算法流程："></a>选定提案算法流程：</h3><p><img src="https://i.imgur.com/ILh54Uy.png"></p>
-<p>阶段一</p>
-<ol>
-<li>Proposer选择一个提案编号K，然后想Acceptor的某个超过半数的子集成员发送编号为K的Prepare请求。</li>
-<li>如果一个Acceptor收到一个编号为K的Prepare请求，如果K大于该Acceptor已经响应的所有Prepare请求的编号，那么它就会将已经批准过的最大编号提案作为响应反馈给Proposer；如果该Acceptor之前未批准过提案，那么直接返回空响应。<strong>该Acceptor承诺不会再批准小于K的提案，设置接收的提案值为K。</strong></li>
-</ol>
-<p>阶段二：</p>
-<ol>
-<li>如果Proposer收到半数以上的Acceptor对于其发出的编号为K的Prepare请求响应，那么它就会发送一个针对[K,V]提案的Accept请求给Acceptor。(V为返回的所有响应中编号最大提案的值)</li>
-<li>如果Acceptor收到这个[K,V]提案的Accept请求，只要该Acceptor尚未对编号大于K的Prepare请求作出响应，它就可以通过提案。</li>
-</ol>
-<h3 id="提案的获取"><a href="#提案的获取" class="headerlink" title="提案的获取"></a>提案的获取</h3><p>方案一</p>
-<p>一旦Acceptor批准了一个提案，就将该提案发送给所有Learner。<br>需要让每个Acceptor与所有Learner逐个进行通信，通信次数至少为二者乘积。</p>
-<p>方案二</p>
-<p>所有的Acceptor将提案批准情况统一发送给一个特定的Learner，它来负责通知其他的Learner。<br>问题：主Learner随时可能出现故障</p>
-<p>方案三</p>
-<p>Acceptor将批准的天发送给特定的Learner集合</p>
-<h3 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h3><h4 id="Prepare-阶段"><a href="#Prepare-阶段" class="headerlink" title="Prepare 阶段"></a>Prepare 阶段</h4><p>下图演示了两个 Proposer 和三个 Acceptor 的系统中运行该算法的初始过程，每个 Proposer 都会向所有 Acceptor 发送 Prepare 请求。</p>
-<p><img src="https://i.imgur.com/lvlzG5p.png"></p>
-<p>当 Acceptor 接收到一个 Prepare 请求，包含的提议为 [n1, v1]，并且之前还未接收过 Prepare 请求，那么发送一个 Prepare 响应，设置当前接收到的提议为 [n1, v1]，并且保证以后不会再接受序号小于 n1 的提议。</p>
-<p>如下图，Acceptor X 在收到 [n&#x3D;2, v&#x3D;8] 的 Prepare 请求时，由于之前没有接收过提议，因此就发送一个 [no previous] 的 Prepare 响应，设置当前接收到的提议为 [n&#x3D;2, v&#x3D;8]，并且保证以后不会再接受序号小于 2 的提议。其它的 Acceptor 类似。</p>
-<p><img src="https://i.imgur.com/euXdPJZ.jpg"></p>
-<p>如果 Acceptor 接收到一个 Prepare 请求，包含的提议为 [n2, v2]，并且之前已经接收过提议 [n1, v1]。如果 n1 &gt; n2，那么就丢弃该提议请求；否则，发送 Prepare 响应，该 Prepare 响应包含之前已经接收过的提议 [n1, v1]，设置当前接收到的提议为 [n2, v2]，并且保证以后不会再接受序号小于 n2 的提议。</p>
-<p>如下图，Acceptor Z 收到 Proposer A 发来的 [n&#x3D;2, v&#x3D;8] 的 Prepare 请求，由于之前已经接收过 [n&#x3D;4, v&#x3D;5] 的提议，并且 n &gt; 2，因此就抛弃该提议请求；Acceptor X 收到 Proposer B 发来的 [n&#x3D;4, v&#x3D;5] 的 Prepare 请求，因为之前接收到的提议为 [n&#x3D;2, v&#x3D;8]，并且 2 &lt;&#x3D; 4，因此就发送 [n&#x3D;2, v&#x3D;8] 的 Prepare 响应，设置当前接收到的提议为 [n&#x3D;4, v&#x3D;5]，并且保证以后不会再接受序号小于 4 的提议。Acceptor Y 类似。<br><img src="https://i.imgur.com/90o9cLJ.jpg"></p>
-<h4 id="Accept-阶段"><a href="#Accept-阶段" class="headerlink" title="Accept 阶段"></a>Accept 阶段</h4><p>当一个 Proposer 接收到超过一半 Acceptor 的 Prepare 响应时，就可以发送 Accept 请求。</p>
-<p>Proposer A 接收到两个 Prepare 响应之后，就发送 [n&#x3D;2, v&#x3D;8] Accept 请求。该 Accept 请求会被所有 Acceptor 丢弃，因为此时所有 Acceptor 都保证不接受序号小于 4 的提议。</p>
-<p>Proposer B 过后也收到了两个 Prepare 响应，因此也开始发送 Accept 请求。需要注意的是，Accept 请求的 v 需要取它收到的最大提议编号对应的 v 值，也就是 8。因此它发送 [n&#x3D;4, v&#x3D;8] 的 Accept 请求。</p>
-<p><img src="https://i.imgur.com/DhgPWlP.png"></p>
-<h4 id="Learn-阶段"><a href="#Learn-阶段" class="headerlink" title="Learn 阶段"></a>Learn 阶段</h4><p>Acceptor 接收到 Accept 请求时，如果序号大于等于该 Acceptor 承诺的最小序号，那么就发送 Learn 提议给所有的 Learner。当 Learner 发现有大多数的 Acceptor 接收了某个提议，那么该提议的提议值就被 Paxos 选择出来。</p>
-<p><img src="https://i.imgur.com/vROZJFn.jpg"></p>
-<h2 id="Raft算法"><a href="#Raft算法" class="headerlink" title="Raft算法"></a>Raft算法</h2><blockquote>
-<p><a href="https://github.com/CyC2018/CS-Notes/blob/master/notes/%E5%88%86%E5%B8%83%E5%BC%8F.md#%E4%BA%94paxos">https://github.com/CyC2018/CS-Notes/blob/master/notes/%E5%88%86%E5%B8%83%E5%BC%8F.md#%E4%BA%94paxos</a></p>
-</blockquote>
+    <title>UV-Python包和项目管理器</title>
+    <url>/2025/04/25/UV-Python%E5%8C%85%E5%92%8C%E9%A1%B9%E7%9B%AE%E7%AE%A1%E7%90%86%E5%99%A8/</url>
+    <content><![CDATA[<h2 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h2><p><a href="https://docs.astral.sh/uv/getting-started/installation/">UV</a>, 一个用 Rust 编写的极快的 Python 包和项目管理器。</p>
+<ul>
+<li>🚀一个工具即可替换<code>pip</code>、、、、、、、等等<code>pip-tools</code>。<code>pipx``poetry``pyenv``twine``virtualenv</code></li>
+<li>⚡️比<a href="https://github.com/astral-sh/uv/blob/main/BENCHMARKS.md">快 10-100 倍</a><code>pip</code>。</li>
+<li>🗂️ 提供<a href="https://github.com/astral-sh/uv#projects">全面的项目管理</a>，并带有 <a href="https://docs.astral.sh/uv/concepts/projects/layout#the-lockfile">通用的锁文件</a>。</li>
+<li>❇️<a href="https://github.com/astral-sh/uv#scripts">运行脚本</a>，支持 <a href="https://docs.astral.sh/uv/guides/scripts#declaring-script-dependencies">内联依赖元数据</a>。</li>
+<li>🐍<a href="https://github.com/astral-sh/uv#python-versions">安装和管理</a>Python 版本。</li>
+<li>🛠️<a href="https://github.com/astral-sh/uv#tools">运行并安装</a>作为 Python 包发布的工具。</li>
+<li>🔩 包含与<a href="https://github.com/astral-sh/uv#the-pip-interface">pip 兼容的接口</a>，可通过熟悉的 CLI 提高性能。</li>
+<li>🏢 支持可扩展项目的Cargo 风格<a href="https://docs.astral.sh/uv/concepts/projects/workspaces">工作区。</a></li>
+<li>💾 节省磁盘空间，具有用于依赖性重复数据删除的<a href="https://docs.astral.sh/uv/concepts/cache">全局缓存</a>。</li>
+<li>⏬ 无需 Rust 或 Python 即可通过<code>curl</code>或安装<code>pip</code>。</li>
+<li>🖥️ 支持 macOS、Linux 和 Windows。</li>
+</ul>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><h3 id="独立安装"><a href="#独立安装" class="headerlink" title="独立安装"></a>独立安装</h3><p>uv 提供了一个独立的安装程序来下载和安装 uv：<br>Widnow使用<code>irm</code>以下方式下载脚本并执行<code>iex</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">powershell -ExecutionPolicy ByPass -c &quot;irm https://astral.sh/uv/install.ps1 | iex&quot;</span><br></pre></td></tr></table></figure>
+<p>通过在 URL 中包含特定版本来请求它</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">powershell -ExecutionPolicy ByPass -c &quot;irm https://astral.sh/uv/0.6.14/install.ps1 | iex&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="WinGet"><a href="#WinGet" class="headerlink" title="WinGet"></a>WinGet</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">winget install --id=astral-sh.uv  -e</span><br></pre></td></tr></table></figure>
+<h3 id="Scoop"><a href="#Scoop" class="headerlink" title="Scoop"></a>Scoop</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">scoop install main/uv</span><br></pre></td></tr></table></figure>
+
+
+<p>安装完成后使用以下命令来检查uv是否可用：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv</span><br></pre></td></tr></table></figure>
+<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>uv 提供了 Python 开发的基本功能——从安装 Python 和支持简单脚本到处理支持多个 Python 版本和平台的大型项目。目前uv 主要分为下面几个功能,下面简单介绍一下使用。</p>
+<ul>
+<li>Python版本的管理</li>
+<li>脚本执行</li>
+<li>项目管理</li>
+</ul>
+<h3 id="项目管理"><a href="#项目管理" class="headerlink" title="项目管理"></a><a href="https://docs.astral.sh/uv/concepts/projects/">项目管理</a></h3><p>uv 支持管理 Python 项目，在文件中定义其依赖关系<code>pyproject.toml</code>。<br>主要包含下面命令:</p>
+<ul>
+<li><code>uv init</code>：创建一个新的 Python 项目。</li>
+<li><code>uv add</code>：向项目添加依赖项。</li>
+<li><code>uv remove</code>：从项目中删除依赖项。</li>
+<li><code>uv sync</code>：将项目的依赖项与环境同步。</li>
+<li><code>uv lock</code>：为项目的依赖项创建一个锁文件。</li>
+<li><code>uv run</code>：在项目环境中运行命令。</li>
+<li><code>uv tree</code>：查看项目的依赖关系树。</li>
+<li><code>uv build</code>：将项目构建到分发档案中。</li>
+<li><code>uv publish</code>：将项目发布到包索引。</li>
+</ul>
+<h4 id="创建新项目"><a href="#创建新项目" class="headerlink" title="创建新项目"></a>创建新项目</h4><p>可以使用以下命令创建一个新的 Python 项目<code>uv init</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv init hello-world</span><br><span class="line">cd hello-world</span><br></pre></td></tr></table></figure>
+
+<p>或者，您可以在工作目录中初始化一个项目：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir hello-world</span><br><span class="line">cd hello-world</span><br><span class="line">uv init</span><br></pre></td></tr></table></figure>
+<p>uv 将创建以下文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.</span><br><span class="line">├── .python-version</span><br><span class="line">├── README.md</span><br><span class="line">├── main.py</span><br><span class="line">└── pyproject.toml</span><br></pre></td></tr></table></figure>
+
+<h4 id="项目结构"><a href="#项目结构" class="headerlink" title="项目结构"></a>项目结构</h4><p>一个项目由几个重要的部分组成，它们协同工作，并允许 uv 管理你的项目。除了 由 创建的文件之外， 当你第一次运行项目命令（即、 或 ）时， <code>uv init</code>uv 还会在项目的根目录中创建一个虚拟环境和文件。完整列表如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.</span><br><span class="line">├── .venv   //虚拟环境</span><br><span class="line">│   ├── bin</span><br><span class="line">│   ├── lib</span><br><span class="line">│   └── pyvenv.cfg</span><br><span class="line">├── .python-version  //包含项目的默认 Python 版本。此文件告诉 uv 在创建项目的虚拟环境时使用哪个 Python 版本。</span><br><span class="line">├── README.md  </span><br><span class="line">├── main.py</span><br><span class="line">├── pyproject.toml    // 有关您的项目的元数据</span><br><span class="line">└── uv.lock  </span><br></pre></td></tr></table></figure>
+<p>其中<code>uv.lock</code>是一个跨平台的锁文件，其中包含项目依赖项的精确信息。与<code>pyproject.toml</code>用于指定项目总体需求的 不同，锁文件包含项目环境中已安装的精确解析版本。&#x3D;&#x3D;此文件应纳入版本控制，以便在不同机器上实现一致且可重复的安装&#x3D;&#x3D;。<code>uv.lock</code>是人类可读的 TOML 文件，但由 uv 管理，不应手动编辑。</p>
+<h4 id="管理依赖项"><a href="#管理依赖项" class="headerlink" title="管理依赖项"></a>管理依赖项</h4><p>可以使用命令<code>uv add</code>添加依赖项，这也会更新锁pyproject.toml文件和项目环境&#96;&#96;&#96;</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv add requests</span><br><span class="line"># 指定特定的版本</span><br><span class="line">uv add &#x27;requests==2.31.0&#x27;</span><br><span class="line"># 指定特定的源</span><br><span class="line">uv add git+https://github.com/psf/requests</span><br></pre></td></tr></table></figure>
+<p>如果要删除依赖，可以使用<code>uv remove</code> 命令。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv remove requests</span><br></pre></td></tr></table></figure>
+<p>要升级软件包，请<code>uv lock</code>使用以下<code>--upgrade-package</code>标志运行：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv lock --upgrade-package requests</span><br></pre></td></tr></table></figure>
+
+<p>该<code>--upgrade-package</code>标志将尝试将指定的包更新到最新的兼容版本，同时保持锁文件的其余部分完好无损。</p>
+<h4 id="运行命令"><a href="#运行命令" class="headerlink" title="运行命令"></a>运行命令</h4><p><code>uv run</code>可用于在您的项目环境中运行任意脚本或命令。</p>
+<p>在每次调用之前<code>uv run</code>，uv 都会验证锁文件是否是最新的 <code>pyproject.toml</code>，并且环境是否是最新的锁文件，从而使您的项目保持同步，而无需手动干预。<code>uv run</code>保证您的命令在一致的、锁定的环境中运行。</p>
+<p>例如，使用<code>flask</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv add flask</span><br><span class="line">uv run -- flask run -p 3000</span><br></pre></td></tr></table></figure>
+<p>也可以使用<code>uv sync</code>手动更新环境，然后在执行命令之前激活它：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv sync</span><br><span class="line">source .venv\Scripts\activate</span><br><span class="line">flask run -p 3000</span><br></pre></td></tr></table></figure>
+
+<h4 id="构建发行版"><a href="#构建发行版" class="headerlink" title="构建发行版"></a>构建发行版</h4><p><code>uv build</code>可用于为您的项目构建源分布和二进制分布（轮子）。<br>默认情况下，<code>uv build</code>将在当前目录中构建项目，并将构建的工件放在<code>dist/</code>子目录中：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv build</span><br><span class="line">ls dist/</span><br></pre></td></tr></table></figure>
+
+<h3 id="Python管理"><a href="#Python管理" class="headerlink" title="Python管理"></a>Python管理</h3><p>如果您的系统上已安装 Python，uv 将 <a href="https://docs.astral.sh/uv/guides/install-python/#using-existing-python-versions">检测并使用</a>它，无需任何配置。但是，uv 还可以安装和管理 Python 版本。uv 会根据需要<a href="https://docs.astral.sh/uv/guides/install-python/#automatic-python-downloads">自动安装</a>缺少的 Python 版本——您无需安装 Python 即可开始使用。</p>
+<p>安装最新的版本</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv python install</span><br></pre></td></tr></table></figure>
+<p>安装特定的版本</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv python install 3.12</span><br></pre></td></tr></table></figure>
+<p>重新安装</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv python install --reinstall</span><br></pre></td></tr></table></figure>
+<p>查看已安装的Python版本</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv python list</span><br></pre></td></tr></table></figure>
+
+<h3 id="运行脚本"><a href="#运行脚本" class="headerlink" title="运行脚本"></a><a href="https://docs.astral.sh/uv/guides/scripts/">运行脚本</a></h3><p>Python 脚本是用于独立执行的文件，例如<code>python &lt;script&gt;.py</code>。使用 uv 执行脚本可确保管理脚本依赖关系，而无需手动管理环境。</p>
 ]]></content>
-      <categories>
-        <category>分布式</category>
-      </categories>
       <tags>
-        <tag>分布式</tag>
+        <tag>python</tag>
       </tags>
   </entry>
   <entry>
@@ -1192,6 +1238,51 @@ actions.register(SearchAction.INSTANCE, TransportSearchAction.class);
       </categories>
       <tags>
         <tag>消息队列</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>分布式一致性协议</title>
+    <url>/2019/07/19/Paxos/</url>
+    <content><![CDATA[<h2 id="Paxos算法"><a href="#Paxos算法" class="headerlink" title="Paxos算法"></a>Paxos算法</h2><p>Paxos算法核心是一个一致性算法。<br>在该一致性算法中，有三种参与角色，Proposer，Acceptor和Learner。</p>
+<h3 id="选定提案算法流程："><a href="#选定提案算法流程：" class="headerlink" title="选定提案算法流程："></a>选定提案算法流程：</h3><p><img src="https://i.imgur.com/ILh54Uy.png"></p>
+<p>阶段一</p>
+<ol>
+<li>Proposer选择一个提案编号K，然后想Acceptor的某个超过半数的子集成员发送编号为K的Prepare请求。</li>
+<li>如果一个Acceptor收到一个编号为K的Prepare请求，如果K大于该Acceptor已经响应的所有Prepare请求的编号，那么它就会将已经批准过的最大编号提案作为响应反馈给Proposer；如果该Acceptor之前未批准过提案，那么直接返回空响应。<strong>该Acceptor承诺不会再批准小于K的提案，设置接收的提案值为K。</strong></li>
+</ol>
+<p>阶段二：</p>
+<ol>
+<li>如果Proposer收到半数以上的Acceptor对于其发出的编号为K的Prepare请求响应，那么它就会发送一个针对[K,V]提案的Accept请求给Acceptor。(V为返回的所有响应中编号最大提案的值)</li>
+<li>如果Acceptor收到这个[K,V]提案的Accept请求，只要该Acceptor尚未对编号大于K的Prepare请求作出响应，它就可以通过提案。</li>
+</ol>
+<h3 id="提案的获取"><a href="#提案的获取" class="headerlink" title="提案的获取"></a>提案的获取</h3><p>方案一</p>
+<p>一旦Acceptor批准了一个提案，就将该提案发送给所有Learner。<br>需要让每个Acceptor与所有Learner逐个进行通信，通信次数至少为二者乘积。</p>
+<p>方案二</p>
+<p>所有的Acceptor将提案批准情况统一发送给一个特定的Learner，它来负责通知其他的Learner。<br>问题：主Learner随时可能出现故障</p>
+<p>方案三</p>
+<p>Acceptor将批准的天发送给特定的Learner集合</p>
+<h3 id="实例"><a href="#实例" class="headerlink" title="实例"></a>实例</h3><h4 id="Prepare-阶段"><a href="#Prepare-阶段" class="headerlink" title="Prepare 阶段"></a>Prepare 阶段</h4><p>下图演示了两个 Proposer 和三个 Acceptor 的系统中运行该算法的初始过程，每个 Proposer 都会向所有 Acceptor 发送 Prepare 请求。</p>
+<p><img src="https://i.imgur.com/lvlzG5p.png"></p>
+<p>当 Acceptor 接收到一个 Prepare 请求，包含的提议为 [n1, v1]，并且之前还未接收过 Prepare 请求，那么发送一个 Prepare 响应，设置当前接收到的提议为 [n1, v1]，并且保证以后不会再接受序号小于 n1 的提议。</p>
+<p>如下图，Acceptor X 在收到 [n&#x3D;2, v&#x3D;8] 的 Prepare 请求时，由于之前没有接收过提议，因此就发送一个 [no previous] 的 Prepare 响应，设置当前接收到的提议为 [n&#x3D;2, v&#x3D;8]，并且保证以后不会再接受序号小于 2 的提议。其它的 Acceptor 类似。</p>
+<p><img src="https://i.imgur.com/euXdPJZ.jpg"></p>
+<p>如果 Acceptor 接收到一个 Prepare 请求，包含的提议为 [n2, v2]，并且之前已经接收过提议 [n1, v1]。如果 n1 &gt; n2，那么就丢弃该提议请求；否则，发送 Prepare 响应，该 Prepare 响应包含之前已经接收过的提议 [n1, v1]，设置当前接收到的提议为 [n2, v2]，并且保证以后不会再接受序号小于 n2 的提议。</p>
+<p>如下图，Acceptor Z 收到 Proposer A 发来的 [n&#x3D;2, v&#x3D;8] 的 Prepare 请求，由于之前已经接收过 [n&#x3D;4, v&#x3D;5] 的提议，并且 n &gt; 2，因此就抛弃该提议请求；Acceptor X 收到 Proposer B 发来的 [n&#x3D;4, v&#x3D;5] 的 Prepare 请求，因为之前接收到的提议为 [n&#x3D;2, v&#x3D;8]，并且 2 &lt;&#x3D; 4，因此就发送 [n&#x3D;2, v&#x3D;8] 的 Prepare 响应，设置当前接收到的提议为 [n&#x3D;4, v&#x3D;5]，并且保证以后不会再接受序号小于 4 的提议。Acceptor Y 类似。<br><img src="https://i.imgur.com/90o9cLJ.jpg"></p>
+<h4 id="Accept-阶段"><a href="#Accept-阶段" class="headerlink" title="Accept 阶段"></a>Accept 阶段</h4><p>当一个 Proposer 接收到超过一半 Acceptor 的 Prepare 响应时，就可以发送 Accept 请求。</p>
+<p>Proposer A 接收到两个 Prepare 响应之后，就发送 [n&#x3D;2, v&#x3D;8] Accept 请求。该 Accept 请求会被所有 Acceptor 丢弃，因为此时所有 Acceptor 都保证不接受序号小于 4 的提议。</p>
+<p>Proposer B 过后也收到了两个 Prepare 响应，因此也开始发送 Accept 请求。需要注意的是，Accept 请求的 v 需要取它收到的最大提议编号对应的 v 值，也就是 8。因此它发送 [n&#x3D;4, v&#x3D;8] 的 Accept 请求。</p>
+<p><img src="https://i.imgur.com/DhgPWlP.png"></p>
+<h4 id="Learn-阶段"><a href="#Learn-阶段" class="headerlink" title="Learn 阶段"></a>Learn 阶段</h4><p>Acceptor 接收到 Accept 请求时，如果序号大于等于该 Acceptor 承诺的最小序号，那么就发送 Learn 提议给所有的 Learner。当 Learner 发现有大多数的 Acceptor 接收了某个提议，那么该提议的提议值就被 Paxos 选择出来。</p>
+<p><img src="https://i.imgur.com/vROZJFn.jpg"></p>
+<h2 id="Raft算法"><a href="#Raft算法" class="headerlink" title="Raft算法"></a>Raft算法</h2><blockquote>
+<p><a href="https://github.com/CyC2018/CS-Notes/blob/master/notes/%E5%88%86%E5%B8%83%E5%BC%8F.md#%E4%BA%94paxos">https://github.com/CyC2018/CS-Notes/blob/master/notes/%E5%88%86%E5%B8%83%E5%BC%8F.md#%E4%BA%94paxos</a></p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>分布式</category>
+      </categories>
+      <tags>
+        <tag>分布式</tag>
       </tags>
   </entry>
   <entry>
@@ -1341,468 +1432,6 @@ actions.register(SearchAction.INSTANCE, TransportSearchAction.class);
       <tags>
         <tag>Redis</tag>
         <tag>centos</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>UV-Python包和项目管理器</title>
-    <url>/2025/04/25/UV-Python%E5%8C%85%E5%92%8C%E9%A1%B9%E7%9B%AE%E7%AE%A1%E7%90%86%E5%99%A8/</url>
-    <content><![CDATA[<h2 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h2><p><a href="https://docs.astral.sh/uv/getting-started/installation/">UV</a>, 一个用 Rust 编写的极快的 Python 包和项目管理器。</p>
-<ul>
-<li>🚀一个工具即可替换<code>pip</code>、、、、、、、等等<code>pip-tools</code>。<code>pipx``poetry``pyenv``twine``virtualenv</code></li>
-<li>⚡️比<a href="https://github.com/astral-sh/uv/blob/main/BENCHMARKS.md">快 10-100 倍</a><code>pip</code>。</li>
-<li>🗂️ 提供<a href="https://github.com/astral-sh/uv#projects">全面的项目管理</a>，并带有 <a href="https://docs.astral.sh/uv/concepts/projects/layout#the-lockfile">通用的锁文件</a>。</li>
-<li>❇️<a href="https://github.com/astral-sh/uv#scripts">运行脚本</a>，支持 <a href="https://docs.astral.sh/uv/guides/scripts#declaring-script-dependencies">内联依赖元数据</a>。</li>
-<li>🐍<a href="https://github.com/astral-sh/uv#python-versions">安装和管理</a>Python 版本。</li>
-<li>🛠️<a href="https://github.com/astral-sh/uv#tools">运行并安装</a>作为 Python 包发布的工具。</li>
-<li>🔩 包含与<a href="https://github.com/astral-sh/uv#the-pip-interface">pip 兼容的接口</a>，可通过熟悉的 CLI 提高性能。</li>
-<li>🏢 支持可扩展项目的Cargo 风格<a href="https://docs.astral.sh/uv/concepts/projects/workspaces">工作区。</a></li>
-<li>💾 节省磁盘空间，具有用于依赖性重复数据删除的<a href="https://docs.astral.sh/uv/concepts/cache">全局缓存</a>。</li>
-<li>⏬ 无需 Rust 或 Python 即可通过<code>curl</code>或安装<code>pip</code>。</li>
-<li>🖥️ 支持 macOS、Linux 和 Windows。</li>
-</ul>
-<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><h3 id="独立安装"><a href="#独立安装" class="headerlink" title="独立安装"></a>独立安装</h3><p>uv 提供了一个独立的安装程序来下载和安装 uv：<br>Widnow使用<code>irm</code>以下方式下载脚本并执行<code>iex</code>：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">powershell -ExecutionPolicy ByPass -c &quot;irm https://astral.sh/uv/install.ps1 | iex&quot;</span><br></pre></td></tr></table></figure>
-<p>通过在 URL 中包含特定版本来请求它</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">powershell -ExecutionPolicy ByPass -c &quot;irm https://astral.sh/uv/0.6.14/install.ps1 | iex&quot;</span><br></pre></td></tr></table></figure>
-
-<h3 id="WinGet"><a href="#WinGet" class="headerlink" title="WinGet"></a>WinGet</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">winget install --id=astral-sh.uv  -e</span><br></pre></td></tr></table></figure>
-<h3 id="Scoop"><a href="#Scoop" class="headerlink" title="Scoop"></a>Scoop</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">scoop install main/uv</span><br></pre></td></tr></table></figure>
-
-
-<p>安装完成后使用以下命令来检查uv是否可用：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv</span><br></pre></td></tr></table></figure>
-<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>uv 提供了 Python 开发的基本功能——从安装 Python 和支持简单脚本到处理支持多个 Python 版本和平台的大型项目。目前uv 主要分为下面几个功能,下面简单介绍一下使用。</p>
-<ul>
-<li>Python版本的管理</li>
-<li>脚本执行</li>
-<li>项目管理</li>
-</ul>
-<h3 id="项目管理"><a href="#项目管理" class="headerlink" title="项目管理"></a><a href="https://docs.astral.sh/uv/concepts/projects/">项目管理</a></h3><p>uv 支持管理 Python 项目，在文件中定义其依赖关系<code>pyproject.toml</code>。<br>主要包含下面命令:</p>
-<ul>
-<li><code>uv init</code>：创建一个新的 Python 项目。</li>
-<li><code>uv add</code>：向项目添加依赖项。</li>
-<li><code>uv remove</code>：从项目中删除依赖项。</li>
-<li><code>uv sync</code>：将项目的依赖项与环境同步。</li>
-<li><code>uv lock</code>：为项目的依赖项创建一个锁文件。</li>
-<li><code>uv run</code>：在项目环境中运行命令。</li>
-<li><code>uv tree</code>：查看项目的依赖关系树。</li>
-<li><code>uv build</code>：将项目构建到分发档案中。</li>
-<li><code>uv publish</code>：将项目发布到包索引。</li>
-</ul>
-<h4 id="创建新项目"><a href="#创建新项目" class="headerlink" title="创建新项目"></a>创建新项目</h4><p>可以使用以下命令创建一个新的 Python 项目<code>uv init</code>：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv init hello-world</span><br><span class="line">cd hello-world</span><br></pre></td></tr></table></figure>
-
-<p>或者，您可以在工作目录中初始化一个项目：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mkdir hello-world</span><br><span class="line">cd hello-world</span><br><span class="line">uv init</span><br></pre></td></tr></table></figure>
-<p>uv 将创建以下文件：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.</span><br><span class="line">├── .python-version</span><br><span class="line">├── README.md</span><br><span class="line">├── main.py</span><br><span class="line">└── pyproject.toml</span><br></pre></td></tr></table></figure>
-
-<h4 id="项目结构"><a href="#项目结构" class="headerlink" title="项目结构"></a>项目结构</h4><p>一个项目由几个重要的部分组成，它们协同工作，并允许 uv 管理你的项目。除了 由 创建的文件之外， 当你第一次运行项目命令（即、 或 ）时， <code>uv init</code>uv 还会在项目的根目录中创建一个虚拟环境和文件。完整列表如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">.</span><br><span class="line">├── .venv   //虚拟环境</span><br><span class="line">│   ├── bin</span><br><span class="line">│   ├── lib</span><br><span class="line">│   └── pyvenv.cfg</span><br><span class="line">├── .python-version  //包含项目的默认 Python 版本。此文件告诉 uv 在创建项目的虚拟环境时使用哪个 Python 版本。</span><br><span class="line">├── README.md  </span><br><span class="line">├── main.py</span><br><span class="line">├── pyproject.toml    // 有关您的项目的元数据</span><br><span class="line">└── uv.lock  </span><br></pre></td></tr></table></figure>
-<p>其中<code>uv.lock</code>是一个跨平台的锁文件，其中包含项目依赖项的精确信息。与<code>pyproject.toml</code>用于指定项目总体需求的 不同，锁文件包含项目环境中已安装的精确解析版本。&#x3D;&#x3D;此文件应纳入版本控制，以便在不同机器上实现一致且可重复的安装&#x3D;&#x3D;。<code>uv.lock</code>是人类可读的 TOML 文件，但由 uv 管理，不应手动编辑。</p>
-<h4 id="管理依赖项"><a href="#管理依赖项" class="headerlink" title="管理依赖项"></a>管理依赖项</h4><p>可以使用命令<code>uv add</code>添加依赖项，这也会更新锁pyproject.toml文件和项目环境&#96;&#96;&#96;</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv add requests</span><br><span class="line"># 指定特定的版本</span><br><span class="line">uv add &#x27;requests==2.31.0&#x27;</span><br><span class="line"># 指定特定的源</span><br><span class="line">uv add git+https://github.com/psf/requests</span><br></pre></td></tr></table></figure>
-<p>如果要删除依赖，可以使用<code>uv remove</code> 命令。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv remove requests</span><br></pre></td></tr></table></figure>
-<p>要升级软件包，请<code>uv lock</code>使用以下<code>--upgrade-package</code>标志运行：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv lock --upgrade-package requests</span><br></pre></td></tr></table></figure>
-
-<p>该<code>--upgrade-package</code>标志将尝试将指定的包更新到最新的兼容版本，同时保持锁文件的其余部分完好无损。</p>
-<h4 id="运行命令"><a href="#运行命令" class="headerlink" title="运行命令"></a>运行命令</h4><p><code>uv run</code>可用于在您的项目环境中运行任意脚本或命令。</p>
-<p>在每次调用之前<code>uv run</code>，uv 都会验证锁文件是否是最新的 <code>pyproject.toml</code>，并且环境是否是最新的锁文件，从而使您的项目保持同步，而无需手动干预。<code>uv run</code>保证您的命令在一致的、锁定的环境中运行。</p>
-<p>例如，使用<code>flask</code>：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv add flask</span><br><span class="line">uv run -- flask run -p 3000</span><br></pre></td></tr></table></figure>
-<p>也可以使用<code>uv sync</code>手动更新环境，然后在执行命令之前激活它：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv sync</span><br><span class="line">source .venv\Scripts\activate</span><br><span class="line">flask run -p 3000</span><br></pre></td></tr></table></figure>
-
-<h4 id="构建发行版"><a href="#构建发行版" class="headerlink" title="构建发行版"></a>构建发行版</h4><p><code>uv build</code>可用于为您的项目构建源分布和二进制分布（轮子）。<br>默认情况下，<code>uv build</code>将在当前目录中构建项目，并将构建的工件放在<code>dist/</code>子目录中：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv build</span><br><span class="line">ls dist/</span><br></pre></td></tr></table></figure>
-
-<h3 id="Python管理"><a href="#Python管理" class="headerlink" title="Python管理"></a>Python管理</h3><p>如果您的系统上已安装 Python，uv 将 <a href="https://docs.astral.sh/uv/guides/install-python/#using-existing-python-versions">检测并使用</a>它，无需任何配置。但是，uv 还可以安装和管理 Python 版本。uv 会根据需要<a href="https://docs.astral.sh/uv/guides/install-python/#automatic-python-downloads">自动安装</a>缺少的 Python 版本——您无需安装 Python 即可开始使用。</p>
-<p>安装最新的版本</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv python install</span><br></pre></td></tr></table></figure>
-<p>安装特定的版本</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv python install 3.12</span><br></pre></td></tr></table></figure>
-<p>重新安装</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv python install --reinstall</span><br></pre></td></tr></table></figure>
-<p>查看已安装的Python版本</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">uv python list</span><br></pre></td></tr></table></figure>
-
-<h3 id="运行脚本"><a href="#运行脚本" class="headerlink" title="运行脚本"></a><a href="https://docs.astral.sh/uv/guides/scripts/">运行脚本</a></h3><p>Python 脚本是用于独立执行的文件，例如<code>python &lt;script&gt;.py</code>。使用 uv 执行脚本可确保管理脚本依赖关系，而无需手动管理环境。</p>
-]]></content>
-      <tags>
-        <tag>python</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>java多线程</title>
-    <url>/2019/01/21/java%E5%A4%9A%E7%BA%BF%E7%A8%8B/</url>
-    <content><![CDATA[<h2 id="Java多线程简单使用"><a href="#Java多线程简单使用" class="headerlink" title="Java多线程简单使用"></a>Java多线程简单使用</h2><h3 id="继承Thread类"><a href="#继承Thread类" class="headerlink" title="继承Thread类"></a>继承Thread类</h3><p>通过继承Thread，重写run方法</p>
-<pre><code>public class MyThread extends Thread&#123;
-
-    @Override
-    public void run() &#123;
-        super.run();
-        System.out.println(&quot;MyThread&quot;);
-    &#125;
-&#125;
-</code></pre>
-<p>测试代码：</p>
-<pre><code>@Test
-public void test1()&#123;
-    MyThread myThread = new MyThread();
-    myThread.start();
-    System.out.println(&quot;运行结束&quot;);
-
-&#125;
-</code></pre>
-<blockquote>
-<p>因为java是单根继承，不支持多继承，在程序设计上是有局限的。</p>
-</blockquote>
-<h3 id="实现Runnable接口（推荐）"><a href="#实现Runnable接口（推荐）" class="headerlink" title="实现Runnable接口（推荐）"></a>实现Runnable接口（推荐）</h3><p>实现Runnale接口，重写run方法</p>
-<pre><code>public class MyRunnable implements Runnable &#123;
-
-    @Override
-    public void run() &#123;
-        System.out.println(&quot;running&quot;);
-    &#125;
-&#125;
-</code></pre>
-<p>测试代码：</p>
-<pre><code>@Test
-public void test2()&#123;
-    MyRunnable myRunnable = new MyRunnable();
-    Thread thread = new Thread(myRunnable);
-    thread.start();
-    System.out.println(&quot;ending&quot;);
-
-&#125;
-</code></pre>
-<blockquote>
-<ul>
-<li>注意，这里测试代码是实现Runnable接口后，通过Thread来接受Runnable接口对象，这样可以让Thread的start方法来调用Run方法，起到多线程的作用。</li>
-</ul>
-</blockquote>
-<blockquote>
-<ul>
-<li>如果直接在主程序中调用run方法，就仅仅是程序的调用，无法起到多线程的作用。</li>
-</ul>
-</blockquote>
-<hr>
-<h2 id="java多线程的同步"><a href="#java多线程的同步" class="headerlink" title="java多线程的同步"></a>java多线程的同步</h2><h3 id="synchronize实现同步"><a href="#synchronize实现同步" class="headerlink" title="synchronize实现同步"></a>synchronize实现同步</h3><p>java中的每一个对象都可以作为锁，具体表现形式为下面三种形式：</p>
-<blockquote>
-<ul>
-<li>对于普通同步方法，锁是当前实例对象</li>
-<li>对于静态同步方法，锁是当前类的class对象</li>
-<li>对于同步方法块，锁是Synchronize括号里配置的对象</li>
-</ul>
-</blockquote>
-<p>上面三种形式默认synchronized相当于synchronized（this）锁this对象。</p>
-<p>对于synchronized(非this对象x)这种情况，有下属三种结论：</p>
-<blockquote>
-<ul>
-<li>当多个线程同时执行synchronized（x）{}同步代码块呈现同步效果。</li>
-<li>当其它线程执行x对象中synchronized同步方法呈现同步效果</li>
-<li>当其它线程执行x对象方法里面的synchronized（this）代码块也呈现同步效果。</li>
-</ul>
-</blockquote>
-<h3 id="volatile关键字"><a href="#volatile关键字" class="headerlink" title="volatile关键字"></a>volatile关键字</h3><p>关键字volatile主要作用是使变量在多个线程间可见</p>
-<hr>
-<h2 id="Java线程间通信"><a href="#Java线程间通信" class="headerlink" title="Java线程间通信"></a>Java线程间通信</h2><h3 id="等待-通知机制"><a href="#等待-通知机制" class="headerlink" title="等待&#x2F;通知机制"></a>等待&#x2F;通知机制</h3><p><img src="/"></p>
-<p>等待&#x2F;通知机制，是指一个线程A调用了对象O的wait()方法进入等待状态，而另一个线程B<br>调用了对象O的notify()或者notifyAll()方法，线程A收到通知后从对象O的wait()方法返回，进而<br>执行后续操作。上述两个线程通过对象O来完成交互，而对象上的wait()和notify&#x2F;notifyAll()的<br>关系就如同开关信号一样，用来完成等待方和通知方之间的交互工作。</p>
-<pre><code>public class WaitNotify &#123;
-    static boolean flag = true;
-    static Object  lock = new Object();
-
-    public static void main(String[] args) throws Exception &#123;
-        Thread waitThread = new Thread(new Wait(), &quot;WaitThread&quot;);
-        waitThread.start();
-        TimeUnit.SECONDS.sleep(1);
-
-        Thread notifyThread = new Thread(new Notify(), &quot;NotifyThread&quot;);
-        notifyThread.start();
-    &#125;
-
-    static class Wait implements Runnable &#123;
-        public void run() &#123;
-            // 加锁，拥有lock的Monitor
-            synchronized (lock) &#123;
-                // 当条件不满足时，继续wait，同时释放了lock的锁
-                while (flag) &#123;
-                    try &#123;
-                        System.out.println(Thread.currentThread() + &quot; flag is true. wait @ &quot;
-                                           + new SimpleDateFormat(&quot;HH:mm:ss&quot;).format(new Date()));
-                        lock.wait();
-                    &#125; catch (InterruptedException e) &#123;
-                    &#125;
-                &#125;
-                // 条件满足时，完成工作
-                System.out.println(Thread.currentThread() + &quot; flag is false. running @ &quot;
-                                   + new SimpleDateFormat(&quot;HH:mm:ss&quot;).format(new Date()));
-            &#125;
-        &#125;
-    &#125;
-
-    static class Notify implements Runnable &#123;
-        public void run() &#123;
-            // 加锁，拥有lock的Monitor
-            synchronized (lock) &#123;
-                // 获取lock的锁，然后进行通知，通知时不会释放lock的锁，
-                // 直到当前线程释放了lock后，WaitThread才能从wait方法中返回
-                System.out.println(Thread.currentThread() + &quot; hold lock. notify @ &quot; + new SimpleDateFormat(&quot;HH:mm:ss&quot;).format(new Date()));
-                lock.notifyAll();
-                flag = false;
-                SleepUtils.second(5);
-            &#125;
-            // 再次加锁
-            synchronized (lock) &#123;
-                System.out.println(Thread.currentThread() + &quot; hold lock again. sleep @ &quot;
-                                   + new SimpleDateFormat(&quot;HH:mm:ss&quot;).format(new Date()));
-                SleepUtils.second(5);
-            &#125;
-        &#125;
-    &#125;
-&#125;
-</code></pre>
-<p>我们在使用这些方法需要注意下面几点：</p>
-<ul>
-<li><p>1）使用wait()、notify()和notifyAll()时需要先对调用对象加锁。</p>
-<pre><code>  即这些方法必须位于synchronize同步块内。
-</code></pre>
-</li>
-<li><p>2）调用wait()方法后，线程状态由RUNNING变为WAITING，并将当前线程放置到对象的<br>等待队列。</p>
-</li>
-<li><p>3）notify()或notifyAll()方法调用后，等待线程依旧不会从wait()返回，需要调用notify()或<br>notifAll()的线程释放锁之后，等待线程才有机会从wait()返回。</p>
-<pre><code>  即会将notify()或者notifAll()所在的同步块执行完才会调转到wait()所在的同步块。
-</code></pre>
-</li>
-<li><p>4）notify()方法将等待队列中的一个等待线程从等待队列中移到同步队列中，而notifyAll()<br>方法则是将等待队列中所有的线程全部移到同步队列，被移动的线程状态由WAITING变为<br>BLOCKED。</p>
-</li>
-<li><p>5）从wait()方法返回的前提是获得了调用对象的锁。</p>
-</li>
-</ul>
-<h3 id="管道输入-输出流"><a href="#管道输入-输出流" class="headerlink" title="管道输入&#x2F;输出流"></a>管道输入&#x2F;输出流</h3><p>管道流主要用于线程之间的数据传输，传输的媒介是内存。java中主要包括了4种具体的实现：PipedOutputStream、PipedInputStream、PipedReader和PipedWriter，前两种面向字节，而后两种面向字符。</p>
-<pre><code>public class Piped &#123;
-
-    public static void main(String[] args) throws Exception &#123;
-        PipedWriter out = new PipedWriter();
-        PipedReader in = new PipedReader();
-        // 将输出流和输入流进行连接，否则在使用时会抛出IOException
-        out.connect(in);
-
-        Thread printThread = new Thread(new Print(in), &quot;PrintThread&quot;);
-        printThread.start();
-        int receive = 0;
-        try &#123;
-            while ((receive = System.in.read()) != -1) &#123;
-                out.write(receive);
-            &#125;
-        &#125; finally &#123;
-            out.close();
-        &#125;
-    &#125;
-
-    static class Print implements Runnable &#123;
-        private PipedReader in;
-
-        public Print(PipedReader in) &#123;
-            this.in = in;
-        &#125;
-
-        public void run() &#123;
-            int receive = 0;
-            try &#123;
-                while ((receive = in.read()) != -1) &#123;
-                    System.out.print((char) receive);
-                &#125;
-            &#125; catch (IOException ex) &#123;
-            &#125;
-        &#125;
-    &#125;
-&#125;
-</code></pre>
-<h3 id="join方法"><a href="#join方法" class="headerlink" title="join方法"></a>join方法</h3><ul>
-<li><p>thread.join()当前线程等待thread线程终止后才继续执行。</p>
-</li>
-<li><p>thread.join(long millis)具备超时特性，在上者情况下，如果在指定时间内进程没终止，将从超时方法返回。</p>
-</li>
-<li><p>thread.join(long millis,int nanos) </p>
-<pre><code>  public class Join &#123;
-      public static void main(String[] args) throws Exception &#123;
-          Thread previous = Thread.currentThread();
-          for (int i = 0; i &lt; 10; i++) &#123;
-              // 每个线程拥有前一个线程的引用，需要等待前一个线程终止，才能从等待中返回
-              Thread thread = new Thread(new Domino(previous), String.valueOf(i));
-              thread.start();
-              previous = thread;
-          &#125;
-  
-          TimeUnit.SECONDS.sleep(5);
-          System.out.println(Thread.currentThread().getName() + &quot; terminate.&quot;);
-      &#125;
-  
-      static class Domino implements Runnable &#123;
-          private Thread thread;
-  
-          public Domino(Thread thread) &#123;
-              this.thread = thread;
-          &#125;
-  
-          public void run() &#123;
-              try &#123;
-                  thread.join();
-              &#125; catch (InterruptedException e) &#123;
-              &#125;
-              System.out.println(Thread.currentThread().getName() + &quot; terminate.&quot;);
-          &#125;
-      &#125;
-  &#125;
-</code></pre>
-</li>
-</ul>
-<p>结果如下：</p>
-<pre><code>main terminate.
-0 terminate.
-1 terminate.
-2 terminate.
-3 terminate.
-4 terminate.
-5 terminate.
-6 terminate.
-7 terminate.
-8 terminate.
-9 terminate.
-</code></pre>
-<h3 id="ThreadLocal的使用"><a href="#ThreadLocal的使用" class="headerlink" title="ThreadLocal的使用"></a>ThreadLocal的使用</h3><p>ThreadLocal，即线程变量，是一个以ThreadLocal对象为键、任意对象为值的存储结构。这<br>个结构被附带在线程上，也就是说一个线程可以根据一个ThreadLocal对象查询到绑定在这个<br>线程上的一个值。</p>
-<p>可以通过set(T)方法来设置一个值，在当前线程下再通过get()方法获取到原先设置的值。</p>
-<pre><code>public class Profiler &#123;
-    // 第一次get()方法调用时会进行初始化（如果set方法没有调用），每个线程会调用一次
-    private static final ThreadLocal&lt;Long&gt; TIME_THREADLOCAL = new ThreadLocal&lt;Long&gt;() &#123;
-         protected Long initialValue() &#123;
-            return System.currentTimeMillis();&#125;
-    &#125;;
-
-    public static final void begin() &#123;
-        TIME_THREADLOCAL.set(System.currentTimeMillis());
-    &#125;
-
-    public static final long end() &#123;
-        return System.currentTimeMillis() - TIME_THREADLOCAL.get();
-    &#125;
-
-    public static void main(String[] args) throws Exception &#123;
-        Profiler.begin();
-        TimeUnit.SECONDS.sleep(1);
-        System.out.println(&quot;Cost: &quot; + Profiler.end() + &quot; mills&quot;);
-    &#125;
-&#125;
-</code></pre>
-<hr>
-<h2 id="java多线程基础"><a href="#java多线程基础" class="headerlink" title="java多线程基础"></a>java多线程基础</h2><h3 id="线程优先级"><a href="#线程优先级" class="headerlink" title="线程优先级"></a>线程优先级</h3><p>在Java线程中，通过一个整型成员变量priority来控制优先级，优先级的范围从1~10，在线<br>程构建的时候可以通过setPriority(int)方法来修改优先级，默认优先级是5，优先级高的线程分<br>配时间片的数量要多于优先级低的线程。设置线程优先级时，针对频繁阻塞（休眠或者I&#x2F;O操<br>作）的线程需要设置较高优先级，而偏重计算（需要较多CPU时间或者偏运算）的线程则设置较<br>低的优先级，确保处理器不会被独占。在不同的JVM以及操作系统上，线程规划会存在差异，<br>有些操作系统甚至会忽略对线程优先级的设定。</p>
-<pre><code>setPriority(int)
-</code></pre>
-<h3 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h3><p>java线程在运行的生命周期可能处于下表的6中不同的状态，在给定的一个时刻，<br>线程只能处于其中的一个状态。</p>
-<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20181122170533.png"></p>
-<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20181122170707.png"></p>
-<h3 id="守护线程Daemon"><a href="#守护线程Daemon" class="headerlink" title="守护线程Daemon"></a>守护线程Daemon</h3><p>Daemon线程是一种支持型线程，因为它主要被用作程序中后台调度以及支持性工作。这<br>意味着，当一个Java虚拟机中不存在非Daemon线程的时候，Java虚拟机将会退出。可以通过调<br>用Thread.setDaemon(true)将线程设置为Daemon线程。<br>Daemon线程被用作完成支持性工作，但是在Java虚拟机退出时Daemon线程中的finally块<br>并不一定会执行。</p>
-<ul>
-<li><em>Daemon属性需要在启动线程之前设置，不能在启动线程之后设置</em></li>
-<li><em>在构建Daemon线程时，不能依靠finally块中的内容来确保执行关闭或清理资源的逻辑。</em></li>
-</ul>
-<h3 id="线程中断"><a href="#线程中断" class="headerlink" title="线程中断"></a>线程中断</h3><p>使用interrupt()方法来停止线程，但interrupt()方法仅仅是在当前线程中刚打了一个断点。</p>
-<p>java提供两种方法判断线程是否中断：</p>
-<blockquote>
-<ul>
-<li>this.interrupted()测试当前进程是否已经中断，执行后将具有状态标志清除为flase功能</li>
-<li>this.isInterrupted()测试线程是否已经中断，不清除状态标志</li>
-</ul>
-</blockquote>
-<p>推荐使用异常法来停止线程：</p>
-<pre><code>public class MyThreadInterrupt extends Thread &#123;
-
-    @Override
-    public void run() &#123;
-        super.run();
-        try&#123;
-            for(int i=0;i&lt;500000;i++)&#123;
-                if(this.isInterrupted())&#123;
-                    System.out.println(&quot;线程终止，即将退出&quot;);
-                    throw new InterruptedException();
-                &#125;
-                System.out.println(&quot;i=&quot;+(i+1));
-            &#125;
-            System.out.println(&quot;for循环完了，继续执行程序。。。&quot;);
-        &#125;catch (InterruptedException e)&#123;
-            System.out.println(&quot;进入catch捕捉异常&quot;);
-            e.printStackTrace();
-        &#125;
-    &#125;
-&#125;
-</code></pre>
-<p>测试代码：</p>
-<pre><code>@Test
-public void test3()&#123;
-    try&#123;
-        MyThreadInterrupt myThreadInterrupt = new MyThreadInterrupt();
-        myThreadInterrupt.start();
-        Thread.sleep(2000);
-        myThreadInterrupt.interrupt();
-    &#125; catch (InterruptedException e)&#123;
-        System.out.println(&quot;mian catch&quot;);
-        e.printStackTrace();
-    &#125;
-
-&#125;
-</code></pre>
-<p><strong>如果不使用抛异常来终止线程，那么线程即使中断还是会for循环继续运行</strong></p>
-<p>或者使用标志位来控制是否需要停止任务并终止线程</p>
-<pre><code>public class Shutdown &#123;
-    public static void main(String[] args) throws Exception &#123;
-        Runner one = new Runner();
-        Thread countThread = new Thread(one, &quot;CountThread&quot;);
-        countThread.start();
-        // 睡眠1秒，main线程对CountThread进行中断，使CountThread能够感知中断而结束
-        TimeUnit.SECONDS.sleep(1);
-        countThread.interrupt();
-        Runner two = new Runner();
-        countThread = new Thread(two, &quot;CountThread&quot;);
-        countThread.start();
-        // 睡眠1秒，main线程对Runner two进行取消，使CountThread能够感知on为false而结束
-        TimeUnit.SECONDS.sleep(1);
-        two.cancel();
-    &#125;
-
-    private static class Runner implements Runnable &#123;
-        private long             i;
-
-        private volatile boolean on = true;
-
-        @Override
-        public void run() &#123;
-            while (on &amp;&amp; !Thread.currentThread().isInterrupted()) &#123;
-                i++;
-            &#125;
-            System.out.println(&quot;Count i = &quot; + i);
-        &#125;
-
-        public void cancel() &#123;
-            on = false;
-        &#125;
-    &#125;
-&#125;
-</code></pre>
-<blockquote>
-<p>注意： suspend(),resume(),stop()已过期</p>
-</blockquote>
-<blockquote>
-<p>全文来自 java并发编程的艺术 和 java多线程编程核心技术</p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>java</category>
-      </categories>
-      <tags>
-        <tag>java多线程</tag>
       </tags>
   </entry>
   <entry>
@@ -2294,151 +1923,374 @@ final V put(K key, int hash, V value, boolean onlyIfAbsent) &#123;
       </tags>
   </entry>
   <entry>
-    <title>InnoDB存储引擎（二）--InnoDB存储引擎中的锁</title>
-    <url>/2019/08/02/mysql%E9%94%81/</url>
-    <content><![CDATA[<h2 id="锁的类型"><a href="#锁的类型" class="headerlink" title="锁的类型"></a>锁的类型</h2><p>InnoDB存储引擎实现了如下两种标准的行级锁：</p>
-<ul>
-<li>共享锁(SLock),允许事务读一行数据。</li>
-<li>排他锁(XLock),允许事务删除或更新一行数据。</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th align="center"></th>
-<th align="center">X</th>
-<th align="center">S</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="center">X</td>
-<td align="center">不兼容</td>
-<td align="center">不兼容</td>
-</tr>
-<tr>
-<td align="center">S</td>
-<td align="center">不兼容</td>
-<td align="center">兼容</td>
-</tr>
-</tbody></table>
-<p>此外，InnoDB存储引擎支持多粒度(granular)锁定，这种锁定允许事务在行级上的<br>锁和表级上的锁同时存在。为了支持在不同粒度上进行加锁操作，InnoDB存储引擎支持<br>一种额外的锁方式，称之为意向锁(Intention Lock)。意向锁是将锁定的对象分为多个层<br>次，意向锁意味着事务希望在更细粒度(fine granularity)上进行加锁。</p>
-<p><img src="https://i.imgur.com/nj2uACp.png"></p>
-<h2 id="一致性非锁定读"><a href="#一致性非锁定读" class="headerlink" title="一致性非锁定读"></a>一致性非锁定读</h2><p>致性的非锁定读(consistent nonlocking read)是指InnoDB存储引繁通过行多版本控制(multi versioning)的方式来读取当前执行时间数据库中行的数据。如果读取的行正在执行DELETE或UPDATE操作，这时读取操作不会因此去等待行上锁的释放。相反地，InnoDB存储引擎会去读取行的一个快照数据。</p>
-<p>快照数据是指该行的之前版本的数据，该实现是通过undo段来完成。而undo用来在事务中回滚数据，因此快照数据本身是没有额外的开销。此外，读取快照数据是不要上锁的，因为没有事务需要对历史的数据进行修改操作。可以看到，非锁定读机制极大地提髙了数据库的并发性。<strong>在InnoDB存储引擎的默认设置下，这是默认的读取方式，即读取不会占用和等待表上的锁。</strong></p>
-<p>但是在不同事务隔离级别下，读取的方式不同，并不是在每个事务隔离级别下都是采用非锁定的一致性读。在事务隔离级别READ COMMITTED和REPEATABLE READ (InnoDB存储引擎的默认事务隔离级別)下，InnoDB存储引擎使用非锁定的一致性读。然而，对于快照数据的定义却不相同。在READ COMMITTED事务隔离级别下，对于快照数据，非一致性读总是读取被锁定行的最新一份快照数据。而在REPEATABLE READ事务隔离级别<br>下，对于快照数据，非一致性读总是读取事务开始时的行数据版本。</p>
-<h3 id="MVCC的实现过程"><a href="#MVCC的实现过程" class="headerlink" title="MVCC的实现过程"></a>MVCC的实现过程</h3><p><strong>版本号</strong></p>
-<p>系统版本号：是一个递增的数字，每开始一个新的事务，系统版本号就会自动递增。</p>
-<p>事务版本号：事务开始时的系统版本号。</p>
-<p><strong>隐藏的列</strong></p>
-<p>MVCC 在每行记录后面都保存着两个隐藏的列，用来存储两个版本号：</p>
-<p>创建版本号：指示创建一个数据行的快照时的系统版本号；</p>
-<p>删除版本号：如果该快照的删除版本号大于当前事务版本号表示该快照有效，否则表示该快照已经被删除了。</p>
-<p>以下实现过程针对可重复读隔离级别。</p>
-<p>当开始一个事务时，该事务的版本号肯定大于当前所有数据行快照的创建版本号，理解这一点很关键。数据行快照的创建版本号是创建数据行快照时的系统版本号，系统版本号随着创建事务而递增，因此新创建一个事务时，这个事务的系统版本号比之前的系统版本号都大，也就是比所有数据行快照的创建版本号都大。</p>
-<ol>
-<li>SELECT</li>
-</ol>
-<p>多个事务必须读取到同一个数据行的快照，并且这个快照是距离现在最近的一个有效快照。但是也有例外，如果有一个事务正在修改该数据行，那么它可以读取事务本身所做的修改，而不用和其它事务的读取结果一致。</p>
-<p>把没有对一个数据行做修改的事务称为 T，T 所要读取的数据行快照的创建版本号必须小于等于 T 的版本号，因为如果大于 T 的版本号，那么表示该数据行快照是其它事务的最新修改，因此不能去读取它。除此之外，T 所要读取的数据行快照的删除版本号必须是未定义或者大于 T 的版本号，因为如果小于等于 T 的版本号，那么表示该数据行快照是已经被删除的，不应该去读取它。</p>
-<ol start="2">
-<li><p>INSERT<br>将当前系统版本号作为数据行快照的创建版本号。</p>
-</li>
-<li><p>DELETE<br>将当前系统版本号作为数据行快照的删除版本号。</p>
-</li>
-<li><p>UPDATE<br>将当前系统版本号作为更新前的数据行快照的删除版本号，并将当前系统版本号作为更新后的数据行快照的创建版本号。可以理解为先执行 DELETE 后执行 INSERT。</p>
-</li>
-</ol>
-<h2 id="一致性锁定读"><a href="#一致性锁定读" class="headerlink" title="一致性锁定读"></a>一致性锁定读</h2><p>InnoDB存储引擎对于select支持两种一致性的锁定读(locking read)操作：</p>
-<ul>
-<li>SELECT — FOR UPDATE</li>
-<li>SELECT — LOCK IN SHARE MODE</li>
-</ul>
-<p>SELECT-FOR UPDATE对读取的行记录加一个X锁，其他事务不能对已锁定的行加上任何锁。SELECT-LOCK IN SHARE MODE对读取的行记录加一个S锁，其他事务可以向被锁定的行加S锁，但是如果加X锁，则会被阻塞。</p>
-<h2 id="锁的算法"><a href="#锁的算法" class="headerlink" title="锁的算法"></a>锁的算法</h2><h3 id="行锁的三种算法"><a href="#行锁的三种算法" class="headerlink" title="行锁的三种算法"></a>行锁的三种算法</h3><p>InnoDB存储引擎有3种行锁的算法，其分别是:</p>
-<ul>
-<li>Record Lock：单个行记录上的锁</li>
-<li>Gap Lock：间隙锁，锁定一个范围，但不包含记录本身</li>
-<li>Next-Key Lock : Gap Lock+Record Lock,锁定一个范围，并且锁定记录本身</li>
-</ul>
-<p>Record Lock总是会去锁住索引记录，如果InnoDB存储引擎表在建立的时候没有设置任何一个索引，那么这时InnoDB存储引擎会使用<strong>隐式的主键</strong>来进行锁定。Next-Key Lock 是结合了 Gap Lock 和 Record Lock 的一种锁定算法，在 Next-Key Lock算法下，InnoDB对于行的査询都是采用这种锁定算法。</p>
-<p>例如一个索引有10, 11，13和20这四个值，那么该索引可能被Next-Key Locking的区间为：</p>
-<pre><code>(-00 ,10]
-(10,11]
-(11， 13]
-(13, 20]
-(20,+ ~)
+    <title>java多线程</title>
+    <url>/2019/01/21/java%E5%A4%9A%E7%BA%BF%E7%A8%8B/</url>
+    <content><![CDATA[<h2 id="Java多线程简单使用"><a href="#Java多线程简单使用" class="headerlink" title="Java多线程简单使用"></a>Java多线程简单使用</h2><h3 id="继承Thread类"><a href="#继承Thread类" class="headerlink" title="继承Thread类"></a>继承Thread类</h3><p>通过继承Thread，重写run方法</p>
+<pre><code>public class MyThread extends Thread&#123;
+
+    @Override
+    public void run() &#123;
+        super.run();
+        System.out.println(&quot;MyThread&quot;);
+    &#125;
+&#125;
 </code></pre>
-<p>当査询的索引含有唯一属性时，InnoDB存储引擎会对Next-Key Lock进行优化，将其降级为Record Lock,即仅锁住索引本身，而不是范围。（仅适用于查询的列是唯一索引的情况）</p>
-<p>若唯一索引由多个列组成，而査询仅是査找多个唯一索引列中的其中一个，那么査询其实是range类型查询，而不是point类型查询，故InnoDB存储引擎依然使用Next-Key Lock进行锁定。</p>
-<h3 id="幻读问题"><a href="#幻读问题" class="headerlink" title="幻读问题"></a>幻读问题</h3><p>Phantom Problem是指在同一事务下，连续执行两次同样的SQL语句可能导致不同的结果，第二次的SQL语句可能会返回之前不存在的行。</p>
-<p>InnoDB存储引擎默认的事务隔离级别是REPEATABLE READ,在该隔离级别下,其采用Next-Key Locking的方式来加锁。而在事务隔离级别READ COMMITTED下,其仅采用Record Lock。</p>
-<h2 id="事务并发一致性问题"><a href="#事务并发一致性问题" class="headerlink" title="事务并发一致性问题"></a>事务并发一致性问题</h2><h3 id="丢失修改"><a href="#丢失修改" class="headerlink" title="丢失修改"></a>丢失修改</h3><p>T1 和 T2 两个事务都对一个数据进行修改，T1 先修改，T2 随后修改，T2 的修改覆盖了 T1 的修改。</p>
-<p><img src="https://i.imgur.com/vooUmjt.png"></p>
-<h3 id="读脏数据"><a href="#读脏数据" class="headerlink" title="读脏数据"></a>读脏数据</h3><p>T1 修改一个数据，T2 随后读取这个数据。如果 T1 撤销了这次修改，那么 T2 读取的数据是脏数据。</p>
-<p><img src="https://i.imgur.com/FqatQev.png"></p>
-<h3 id="不可重复读"><a href="#不可重复读" class="headerlink" title="不可重复读"></a>不可重复读</h3><p>T2 读取一个数据，T1 对该数据做了修改。如果 T2 再次读取这个数据，此时读取的结果和第一次读取的结果不同。</p>
-<p><img src="https://i.imgur.com/u369vWW.png"></p>
-<h3 id="幻影读"><a href="#幻影读" class="headerlink" title="幻影读"></a>幻影读</h3><p>T1 读取某个范围的数据，T2 在这个范围内插入新的数据，T1 再次读取这个范围的数据，此时读取的结果和和第一次读取的结果不同。</p>
-<p><img src="https://i.imgur.com/7LGip7z.png"></p>
-<p>产生并发不一致性问题主要原因是破坏了事务的隔离性，解决方法是通过并发控制来保证隔离性。并发控制可以通过封锁来实现，但是封锁操作需要用户自己控制，相当复杂。数据库管理系统提供了事务的隔离级别，让用户以一种更轻松的方式处理并发一致性问题。</p>
-<h3 id="事务隔离级别"><a href="#事务隔离级别" class="headerlink" title="事务隔离级别"></a>事务隔离级别</h3><ul>
-<li><p>未提交读（READ UNCOMMITTED） —事务中的修改，即使没有提交，对其它事务也是可见的。</p>
+<p>测试代码：</p>
+<pre><code>@Test
+public void test1()&#123;
+    MyThread myThread = new MyThread();
+    myThread.start();
+    System.out.println(&quot;运行结束&quot;);
+
+&#125;
+</code></pre>
+<blockquote>
+<p>因为java是单根继承，不支持多继承，在程序设计上是有局限的。</p>
+</blockquote>
+<h3 id="实现Runnable接口（推荐）"><a href="#实现Runnable接口（推荐）" class="headerlink" title="实现Runnable接口（推荐）"></a>实现Runnable接口（推荐）</h3><p>实现Runnale接口，重写run方法</p>
+<pre><code>public class MyRunnable implements Runnable &#123;
+
+    @Override
+    public void run() &#123;
+        System.out.println(&quot;running&quot;);
+    &#125;
+&#125;
+</code></pre>
+<p>测试代码：</p>
+<pre><code>@Test
+public void test2()&#123;
+    MyRunnable myRunnable = new MyRunnable();
+    Thread thread = new Thread(myRunnable);
+    thread.start();
+    System.out.println(&quot;ending&quot;);
+
+&#125;
+</code></pre>
+<blockquote>
+<ul>
+<li>注意，这里测试代码是实现Runnable接口后，通过Thread来接受Runnable接口对象，这样可以让Thread的start方法来调用Run方法，起到多线程的作用。</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>如果直接在主程序中调用run方法，就仅仅是程序的调用，无法起到多线程的作用。</li>
+</ul>
+</blockquote>
+<hr>
+<h2 id="java多线程的同步"><a href="#java多线程的同步" class="headerlink" title="java多线程的同步"></a>java多线程的同步</h2><h3 id="synchronize实现同步"><a href="#synchronize实现同步" class="headerlink" title="synchronize实现同步"></a>synchronize实现同步</h3><p>java中的每一个对象都可以作为锁，具体表现形式为下面三种形式：</p>
+<blockquote>
+<ul>
+<li>对于普通同步方法，锁是当前实例对象</li>
+<li>对于静态同步方法，锁是当前类的class对象</li>
+<li>对于同步方法块，锁是Synchronize括号里配置的对象</li>
+</ul>
+</blockquote>
+<p>上面三种形式默认synchronized相当于synchronized（this）锁this对象。</p>
+<p>对于synchronized(非this对象x)这种情况，有下属三种结论：</p>
+<blockquote>
+<ul>
+<li>当多个线程同时执行synchronized（x）{}同步代码块呈现同步效果。</li>
+<li>当其它线程执行x对象中synchronized同步方法呈现同步效果</li>
+<li>当其它线程执行x对象方法里面的synchronized（this）代码块也呈现同步效果。</li>
+</ul>
+</blockquote>
+<h3 id="volatile关键字"><a href="#volatile关键字" class="headerlink" title="volatile关键字"></a>volatile关键字</h3><p>关键字volatile主要作用是使变量在多个线程间可见</p>
+<hr>
+<h2 id="Java线程间通信"><a href="#Java线程间通信" class="headerlink" title="Java线程间通信"></a>Java线程间通信</h2><h3 id="等待-通知机制"><a href="#等待-通知机制" class="headerlink" title="等待&#x2F;通知机制"></a>等待&#x2F;通知机制</h3><p><img src="/"></p>
+<p>等待&#x2F;通知机制，是指一个线程A调用了对象O的wait()方法进入等待状态，而另一个线程B<br>调用了对象O的notify()或者notifyAll()方法，线程A收到通知后从对象O的wait()方法返回，进而<br>执行后续操作。上述两个线程通过对象O来完成交互，而对象上的wait()和notify&#x2F;notifyAll()的<br>关系就如同开关信号一样，用来完成等待方和通知方之间的交互工作。</p>
+<pre><code>public class WaitNotify &#123;
+    static boolean flag = true;
+    static Object  lock = new Object();
+
+    public static void main(String[] args) throws Exception &#123;
+        Thread waitThread = new Thread(new Wait(), &quot;WaitThread&quot;);
+        waitThread.start();
+        TimeUnit.SECONDS.sleep(1);
+
+        Thread notifyThread = new Thread(new Notify(), &quot;NotifyThread&quot;);
+        notifyThread.start();
+    &#125;
+
+    static class Wait implements Runnable &#123;
+        public void run() &#123;
+            // 加锁，拥有lock的Monitor
+            synchronized (lock) &#123;
+                // 当条件不满足时，继续wait，同时释放了lock的锁
+                while (flag) &#123;
+                    try &#123;
+                        System.out.println(Thread.currentThread() + &quot; flag is true. wait @ &quot;
+                                           + new SimpleDateFormat(&quot;HH:mm:ss&quot;).format(new Date()));
+                        lock.wait();
+                    &#125; catch (InterruptedException e) &#123;
+                    &#125;
+                &#125;
+                // 条件满足时，完成工作
+                System.out.println(Thread.currentThread() + &quot; flag is false. running @ &quot;
+                                   + new SimpleDateFormat(&quot;HH:mm:ss&quot;).format(new Date()));
+            &#125;
+        &#125;
+    &#125;
+
+    static class Notify implements Runnable &#123;
+        public void run() &#123;
+            // 加锁，拥有lock的Monitor
+            synchronized (lock) &#123;
+                // 获取lock的锁，然后进行通知，通知时不会释放lock的锁，
+                // 直到当前线程释放了lock后，WaitThread才能从wait方法中返回
+                System.out.println(Thread.currentThread() + &quot; hold lock. notify @ &quot; + new SimpleDateFormat(&quot;HH:mm:ss&quot;).format(new Date()));
+                lock.notifyAll();
+                flag = false;
+                SleepUtils.second(5);
+            &#125;
+            // 再次加锁
+            synchronized (lock) &#123;
+                System.out.println(Thread.currentThread() + &quot; hold lock again. sleep @ &quot;
+                                   + new SimpleDateFormat(&quot;HH:mm:ss&quot;).format(new Date()));
+                SleepUtils.second(5);
+            &#125;
+        &#125;
+    &#125;
+&#125;
+</code></pre>
+<p>我们在使用这些方法需要注意下面几点：</p>
+<ul>
+<li><p>1）使用wait()、notify()和notifyAll()时需要先对调用对象加锁。</p>
+<pre><code>  即这些方法必须位于synchronize同步块内。
+</code></pre>
 </li>
-<li><p>提交读（READ COMMITTED） — 一个事务只能读取已经提交的事务所做的修改。换句话说，一个事务所做的修改在提交之前对其它事务是不可见的。</p>
+<li><p>2）调用wait()方法后，线程状态由RUNNING变为WAITING，并将当前线程放置到对象的<br>等待队列。</p>
 </li>
-<li><p>可重复读（REPEATABLE READ）—保证在同一个事务中多次读取同样数据的结果是一样的。</p>
+<li><p>3）notify()或notifyAll()方法调用后，等待线程依旧不会从wait()返回，需要调用notify()或<br>notifAll()的线程释放锁之后，等待线程才有机会从wait()返回。</p>
+<pre><code>  即会将notify()或者notifAll()所在的同步块执行完才会调转到wait()所在的同步块。
+</code></pre>
 </li>
-<li><p>可串行化（SERIALIZABLE）–强制事务串行执行。</p>
+<li><p>4）notify()方法将等待队列中的一个等待线程从等待队列中移到同步队列中，而notifyAll()<br>方法则是将等待队列中所有的线程全部移到同步队列，被移动的线程状态由WAITING变为<br>BLOCKED。</p>
+</li>
+<li><p>5）从wait()方法返回的前提是获得了调用对象的锁。</p>
 </li>
 </ul>
-<table>
-<thead>
-<tr>
-<th align="center">隔离级别</th>
-<th align="center">脏读</th>
-<th align="center">不可重复读</th>
-<th align="center">幻影读</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="center">未提交读</td>
-<td align="center">√</td>
-<td align="center">√</td>
-<td align="center">√</td>
-</tr>
-<tr>
-<td align="center">提交读</td>
-<td align="center">×</td>
-<td align="center">√</td>
-<td align="center">√</td>
-</tr>
-<tr>
-<td align="center">可重复读</td>
-<td align="center">×</td>
-<td align="center">×</td>
-<td align="center">√</td>
-</tr>
-<tr>
-<td align="center">可串行化</td>
-<td align="center">×</td>
-<td align="center">×</td>
-<td align="center">×</td>
-</tr>
-</tbody></table>
-<h2 id="阻塞"><a href="#阻塞" class="headerlink" title="阻塞"></a>阻塞</h2><p>因为不同锁之间的兼容性关系，在有些时刻一个事务中的锁需要等待另一个事务中的锁释放它所占用的资源，这就是阻塞。阻塞并不是一件坏事，其是为了确保事务可以并发且正常地运行。</p>
-<p>在InnoDB存储引擎中，参数innodb_lock_wait_timeout用来控制等待的时间(默认是50秒)，innodb_rollback_on_timeout用来设定是否在等待超时时对进行中的事务进行回滚操作(默认是OFF,代表不回滚)。</p>
-<p><strong>在默认情况下InnoDB存储引擎不会回滚超时引发的错误异常。其实InnoDB存储引擎在大部分情况下都不会对异常进行回滚。</strong></p>
-<h2 id="锁升级"><a href="#锁升级" class="headerlink" title="锁升级"></a>锁升级</h2><p>锁升级(Lock Escalation)是指将当前锁的粒度降低。举例来说，数据库可以把一个表的1000个行锁升级为一个页锁，或者将页锁升级为表锁。如果在数据库的设计中认为锁是一种稀有资源，而且想避免锁的开销，那数据库中会频繁出现锁升级现象。</p>
-<p>InnoDB存储引擎不存在锁升级的问题。因为其不是根据每个记录来产生行锁的，相<br>反，其根据每个事务访问的每个页对锁进行管理的，采用的是位图的方式。因此不管一<br>个事务锁住页中一个记录还是多个记录，其开销通常都是一致的。</p>
+<h3 id="管道输入-输出流"><a href="#管道输入-输出流" class="headerlink" title="管道输入&#x2F;输出流"></a>管道输入&#x2F;输出流</h3><p>管道流主要用于线程之间的数据传输，传输的媒介是内存。java中主要包括了4种具体的实现：PipedOutputStream、PipedInputStream、PipedReader和PipedWriter，前两种面向字节，而后两种面向字符。</p>
+<pre><code>public class Piped &#123;
+
+    public static void main(String[] args) throws Exception &#123;
+        PipedWriter out = new PipedWriter();
+        PipedReader in = new PipedReader();
+        // 将输出流和输入流进行连接，否则在使用时会抛出IOException
+        out.connect(in);
+
+        Thread printThread = new Thread(new Print(in), &quot;PrintThread&quot;);
+        printThread.start();
+        int receive = 0;
+        try &#123;
+            while ((receive = System.in.read()) != -1) &#123;
+                out.write(receive);
+            &#125;
+        &#125; finally &#123;
+            out.close();
+        &#125;
+    &#125;
+
+    static class Print implements Runnable &#123;
+        private PipedReader in;
+
+        public Print(PipedReader in) &#123;
+            this.in = in;
+        &#125;
+
+        public void run() &#123;
+            int receive = 0;
+            try &#123;
+                while ((receive = in.read()) != -1) &#123;
+                    System.out.print((char) receive);
+                &#125;
+            &#125; catch (IOException ex) &#123;
+            &#125;
+        &#125;
+    &#125;
+&#125;
+</code></pre>
+<h3 id="join方法"><a href="#join方法" class="headerlink" title="join方法"></a>join方法</h3><ul>
+<li><p>thread.join()当前线程等待thread线程终止后才继续执行。</p>
+</li>
+<li><p>thread.join(long millis)具备超时特性，在上者情况下，如果在指定时间内进程没终止，将从超时方法返回。</p>
+</li>
+<li><p>thread.join(long millis,int nanos) </p>
+<pre><code>  public class Join &#123;
+      public static void main(String[] args) throws Exception &#123;
+          Thread previous = Thread.currentThread();
+          for (int i = 0; i &lt; 10; i++) &#123;
+              // 每个线程拥有前一个线程的引用，需要等待前一个线程终止，才能从等待中返回
+              Thread thread = new Thread(new Domino(previous), String.valueOf(i));
+              thread.start();
+              previous = thread;
+          &#125;
+  
+          TimeUnit.SECONDS.sleep(5);
+          System.out.println(Thread.currentThread().getName() + &quot; terminate.&quot;);
+      &#125;
+  
+      static class Domino implements Runnable &#123;
+          private Thread thread;
+  
+          public Domino(Thread thread) &#123;
+              this.thread = thread;
+          &#125;
+  
+          public void run() &#123;
+              try &#123;
+                  thread.join();
+              &#125; catch (InterruptedException e) &#123;
+              &#125;
+              System.out.println(Thread.currentThread().getName() + &quot; terminate.&quot;);
+          &#125;
+      &#125;
+  &#125;
+</code></pre>
+</li>
+</ul>
+<p>结果如下：</p>
+<pre><code>main terminate.
+0 terminate.
+1 terminate.
+2 terminate.
+3 terminate.
+4 terminate.
+5 terminate.
+6 terminate.
+7 terminate.
+8 terminate.
+9 terminate.
+</code></pre>
+<h3 id="ThreadLocal的使用"><a href="#ThreadLocal的使用" class="headerlink" title="ThreadLocal的使用"></a>ThreadLocal的使用</h3><p>ThreadLocal，即线程变量，是一个以ThreadLocal对象为键、任意对象为值的存储结构。这<br>个结构被附带在线程上，也就是说一个线程可以根据一个ThreadLocal对象查询到绑定在这个<br>线程上的一个值。</p>
+<p>可以通过set(T)方法来设置一个值，在当前线程下再通过get()方法获取到原先设置的值。</p>
+<pre><code>public class Profiler &#123;
+    // 第一次get()方法调用时会进行初始化（如果set方法没有调用），每个线程会调用一次
+    private static final ThreadLocal&lt;Long&gt; TIME_THREADLOCAL = new ThreadLocal&lt;Long&gt;() &#123;
+         protected Long initialValue() &#123;
+            return System.currentTimeMillis();&#125;
+    &#125;;
+
+    public static final void begin() &#123;
+        TIME_THREADLOCAL.set(System.currentTimeMillis());
+    &#125;
+
+    public static final long end() &#123;
+        return System.currentTimeMillis() - TIME_THREADLOCAL.get();
+    &#125;
+
+    public static void main(String[] args) throws Exception &#123;
+        Profiler.begin();
+        TimeUnit.SECONDS.sleep(1);
+        System.out.println(&quot;Cost: &quot; + Profiler.end() + &quot; mills&quot;);
+    &#125;
+&#125;
+</code></pre>
+<hr>
+<h2 id="java多线程基础"><a href="#java多线程基础" class="headerlink" title="java多线程基础"></a>java多线程基础</h2><h3 id="线程优先级"><a href="#线程优先级" class="headerlink" title="线程优先级"></a>线程优先级</h3><p>在Java线程中，通过一个整型成员变量priority来控制优先级，优先级的范围从1~10，在线<br>程构建的时候可以通过setPriority(int)方法来修改优先级，默认优先级是5，优先级高的线程分<br>配时间片的数量要多于优先级低的线程。设置线程优先级时，针对频繁阻塞（休眠或者I&#x2F;O操<br>作）的线程需要设置较高优先级，而偏重计算（需要较多CPU时间或者偏运算）的线程则设置较<br>低的优先级，确保处理器不会被独占。在不同的JVM以及操作系统上，线程规划会存在差异，<br>有些操作系统甚至会忽略对线程优先级的设定。</p>
+<pre><code>setPriority(int)
+</code></pre>
+<h3 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h3><p>java线程在运行的生命周期可能处于下表的6中不同的状态，在给定的一个时刻，<br>线程只能处于其中的一个状态。</p>
+<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20181122170533.png"></p>
+<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20181122170707.png"></p>
+<h3 id="守护线程Daemon"><a href="#守护线程Daemon" class="headerlink" title="守护线程Daemon"></a>守护线程Daemon</h3><p>Daemon线程是一种支持型线程，因为它主要被用作程序中后台调度以及支持性工作。这<br>意味着，当一个Java虚拟机中不存在非Daemon线程的时候，Java虚拟机将会退出。可以通过调<br>用Thread.setDaemon(true)将线程设置为Daemon线程。<br>Daemon线程被用作完成支持性工作，但是在Java虚拟机退出时Daemon线程中的finally块<br>并不一定会执行。</p>
+<ul>
+<li><em>Daemon属性需要在启动线程之前设置，不能在启动线程之后设置</em></li>
+<li><em>在构建Daemon线程时，不能依靠finally块中的内容来确保执行关闭或清理资源的逻辑。</em></li>
+</ul>
+<h3 id="线程中断"><a href="#线程中断" class="headerlink" title="线程中断"></a>线程中断</h3><p>使用interrupt()方法来停止线程，但interrupt()方法仅仅是在当前线程中刚打了一个断点。</p>
+<p>java提供两种方法判断线程是否中断：</p>
 <blockquote>
-<p>MySQL技术内幕（InnoDB存储引擎）</p>
-<p> <a href="https://github.com/CyC2018/CS-Notes/blob/master/notes/%E6%95%B0%E6%8D%AE%E5%BA%93%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86.md" title="CS-Note">CS-Note</a></p>
+<ul>
+<li>this.interrupted()测试当前进程是否已经中断，执行后将具有状态标志清除为flase功能</li>
+<li>this.isInterrupted()测试线程是否已经中断，不清除状态标志</li>
+</ul>
+</blockquote>
+<p>推荐使用异常法来停止线程：</p>
+<pre><code>public class MyThreadInterrupt extends Thread &#123;
+
+    @Override
+    public void run() &#123;
+        super.run();
+        try&#123;
+            for(int i=0;i&lt;500000;i++)&#123;
+                if(this.isInterrupted())&#123;
+                    System.out.println(&quot;线程终止，即将退出&quot;);
+                    throw new InterruptedException();
+                &#125;
+                System.out.println(&quot;i=&quot;+(i+1));
+            &#125;
+            System.out.println(&quot;for循环完了，继续执行程序。。。&quot;);
+        &#125;catch (InterruptedException e)&#123;
+            System.out.println(&quot;进入catch捕捉异常&quot;);
+            e.printStackTrace();
+        &#125;
+    &#125;
+&#125;
+</code></pre>
+<p>测试代码：</p>
+<pre><code>@Test
+public void test3()&#123;
+    try&#123;
+        MyThreadInterrupt myThreadInterrupt = new MyThreadInterrupt();
+        myThreadInterrupt.start();
+        Thread.sleep(2000);
+        myThreadInterrupt.interrupt();
+    &#125; catch (InterruptedException e)&#123;
+        System.out.println(&quot;mian catch&quot;);
+        e.printStackTrace();
+    &#125;
+
+&#125;
+</code></pre>
+<p><strong>如果不使用抛异常来终止线程，那么线程即使中断还是会for循环继续运行</strong></p>
+<p>或者使用标志位来控制是否需要停止任务并终止线程</p>
+<pre><code>public class Shutdown &#123;
+    public static void main(String[] args) throws Exception &#123;
+        Runner one = new Runner();
+        Thread countThread = new Thread(one, &quot;CountThread&quot;);
+        countThread.start();
+        // 睡眠1秒，main线程对CountThread进行中断，使CountThread能够感知中断而结束
+        TimeUnit.SECONDS.sleep(1);
+        countThread.interrupt();
+        Runner two = new Runner();
+        countThread = new Thread(two, &quot;CountThread&quot;);
+        countThread.start();
+        // 睡眠1秒，main线程对Runner two进行取消，使CountThread能够感知on为false而结束
+        TimeUnit.SECONDS.sleep(1);
+        two.cancel();
+    &#125;
+
+    private static class Runner implements Runnable &#123;
+        private long             i;
+
+        private volatile boolean on = true;
+
+        @Override
+        public void run() &#123;
+            while (on &amp;&amp; !Thread.currentThread().isInterrupted()) &#123;
+                i++;
+            &#125;
+            System.out.println(&quot;Count i = &quot; + i);
+        &#125;
+
+        public void cancel() &#123;
+            on = false;
+        &#125;
+    &#125;
+&#125;
+</code></pre>
+<blockquote>
+<p>注意： suspend(),resume(),stop()已过期</p>
+</blockquote>
+<blockquote>
+<p>全文来自 java并发编程的艺术 和 java多线程编程核心技术</p>
 </blockquote>
 ]]></content>
       <categories>
-        <category>MySQL</category>
+        <category>java</category>
       </categories>
       <tags>
-        <tag>MySQL</tag>
+        <tag>java多线程</tag>
       </tags>
   </entry>
   <entry>
@@ -2850,6 +2702,593 @@ private boolean addIfUnderMaximumPoolSize(Runnable firstTask) &#123;
       <tags>
         <tag>java多线程</tag>
         <tag>线程池</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>InnoDB存储引擎（二）--InnoDB存储引擎中的锁</title>
+    <url>/2019/08/02/mysql%E9%94%81/</url>
+    <content><![CDATA[<h2 id="锁的类型"><a href="#锁的类型" class="headerlink" title="锁的类型"></a>锁的类型</h2><p>InnoDB存储引擎实现了如下两种标准的行级锁：</p>
+<ul>
+<li>共享锁(SLock),允许事务读一行数据。</li>
+<li>排他锁(XLock),允许事务删除或更新一行数据。</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center"></th>
+<th align="center">X</th>
+<th align="center">S</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">X</td>
+<td align="center">不兼容</td>
+<td align="center">不兼容</td>
+</tr>
+<tr>
+<td align="center">S</td>
+<td align="center">不兼容</td>
+<td align="center">兼容</td>
+</tr>
+</tbody></table>
+<p>此外，InnoDB存储引擎支持多粒度(granular)锁定，这种锁定允许事务在行级上的<br>锁和表级上的锁同时存在。为了支持在不同粒度上进行加锁操作，InnoDB存储引擎支持<br>一种额外的锁方式，称之为意向锁(Intention Lock)。意向锁是将锁定的对象分为多个层<br>次，意向锁意味着事务希望在更细粒度(fine granularity)上进行加锁。</p>
+<p><img src="https://i.imgur.com/nj2uACp.png"></p>
+<h2 id="一致性非锁定读"><a href="#一致性非锁定读" class="headerlink" title="一致性非锁定读"></a>一致性非锁定读</h2><p>致性的非锁定读(consistent nonlocking read)是指InnoDB存储引繁通过行多版本控制(multi versioning)的方式来读取当前执行时间数据库中行的数据。如果读取的行正在执行DELETE或UPDATE操作，这时读取操作不会因此去等待行上锁的释放。相反地，InnoDB存储引擎会去读取行的一个快照数据。</p>
+<p>快照数据是指该行的之前版本的数据，该实现是通过undo段来完成。而undo用来在事务中回滚数据，因此快照数据本身是没有额外的开销。此外，读取快照数据是不要上锁的，因为没有事务需要对历史的数据进行修改操作。可以看到，非锁定读机制极大地提髙了数据库的并发性。<strong>在InnoDB存储引擎的默认设置下，这是默认的读取方式，即读取不会占用和等待表上的锁。</strong></p>
+<p>但是在不同事务隔离级别下，读取的方式不同，并不是在每个事务隔离级别下都是采用非锁定的一致性读。在事务隔离级别READ COMMITTED和REPEATABLE READ (InnoDB存储引擎的默认事务隔离级別)下，InnoDB存储引擎使用非锁定的一致性读。然而，对于快照数据的定义却不相同。在READ COMMITTED事务隔离级别下，对于快照数据，非一致性读总是读取被锁定行的最新一份快照数据。而在REPEATABLE READ事务隔离级别<br>下，对于快照数据，非一致性读总是读取事务开始时的行数据版本。</p>
+<h3 id="MVCC的实现过程"><a href="#MVCC的实现过程" class="headerlink" title="MVCC的实现过程"></a>MVCC的实现过程</h3><p><strong>版本号</strong></p>
+<p>系统版本号：是一个递增的数字，每开始一个新的事务，系统版本号就会自动递增。</p>
+<p>事务版本号：事务开始时的系统版本号。</p>
+<p><strong>隐藏的列</strong></p>
+<p>MVCC 在每行记录后面都保存着两个隐藏的列，用来存储两个版本号：</p>
+<p>创建版本号：指示创建一个数据行的快照时的系统版本号；</p>
+<p>删除版本号：如果该快照的删除版本号大于当前事务版本号表示该快照有效，否则表示该快照已经被删除了。</p>
+<p>以下实现过程针对可重复读隔离级别。</p>
+<p>当开始一个事务时，该事务的版本号肯定大于当前所有数据行快照的创建版本号，理解这一点很关键。数据行快照的创建版本号是创建数据行快照时的系统版本号，系统版本号随着创建事务而递增，因此新创建一个事务时，这个事务的系统版本号比之前的系统版本号都大，也就是比所有数据行快照的创建版本号都大。</p>
+<ol>
+<li>SELECT</li>
+</ol>
+<p>多个事务必须读取到同一个数据行的快照，并且这个快照是距离现在最近的一个有效快照。但是也有例外，如果有一个事务正在修改该数据行，那么它可以读取事务本身所做的修改，而不用和其它事务的读取结果一致。</p>
+<p>把没有对一个数据行做修改的事务称为 T，T 所要读取的数据行快照的创建版本号必须小于等于 T 的版本号，因为如果大于 T 的版本号，那么表示该数据行快照是其它事务的最新修改，因此不能去读取它。除此之外，T 所要读取的数据行快照的删除版本号必须是未定义或者大于 T 的版本号，因为如果小于等于 T 的版本号，那么表示该数据行快照是已经被删除的，不应该去读取它。</p>
+<ol start="2">
+<li><p>INSERT<br>将当前系统版本号作为数据行快照的创建版本号。</p>
+</li>
+<li><p>DELETE<br>将当前系统版本号作为数据行快照的删除版本号。</p>
+</li>
+<li><p>UPDATE<br>将当前系统版本号作为更新前的数据行快照的删除版本号，并将当前系统版本号作为更新后的数据行快照的创建版本号。可以理解为先执行 DELETE 后执行 INSERT。</p>
+</li>
+</ol>
+<h2 id="一致性锁定读"><a href="#一致性锁定读" class="headerlink" title="一致性锁定读"></a>一致性锁定读</h2><p>InnoDB存储引擎对于select支持两种一致性的锁定读(locking read)操作：</p>
+<ul>
+<li>SELECT — FOR UPDATE</li>
+<li>SELECT — LOCK IN SHARE MODE</li>
+</ul>
+<p>SELECT-FOR UPDATE对读取的行记录加一个X锁，其他事务不能对已锁定的行加上任何锁。SELECT-LOCK IN SHARE MODE对读取的行记录加一个S锁，其他事务可以向被锁定的行加S锁，但是如果加X锁，则会被阻塞。</p>
+<h2 id="锁的算法"><a href="#锁的算法" class="headerlink" title="锁的算法"></a>锁的算法</h2><h3 id="行锁的三种算法"><a href="#行锁的三种算法" class="headerlink" title="行锁的三种算法"></a>行锁的三种算法</h3><p>InnoDB存储引擎有3种行锁的算法，其分别是:</p>
+<ul>
+<li>Record Lock：单个行记录上的锁</li>
+<li>Gap Lock：间隙锁，锁定一个范围，但不包含记录本身</li>
+<li>Next-Key Lock : Gap Lock+Record Lock,锁定一个范围，并且锁定记录本身</li>
+</ul>
+<p>Record Lock总是会去锁住索引记录，如果InnoDB存储引擎表在建立的时候没有设置任何一个索引，那么这时InnoDB存储引擎会使用<strong>隐式的主键</strong>来进行锁定。Next-Key Lock 是结合了 Gap Lock 和 Record Lock 的一种锁定算法，在 Next-Key Lock算法下，InnoDB对于行的査询都是采用这种锁定算法。</p>
+<p>例如一个索引有10, 11，13和20这四个值，那么该索引可能被Next-Key Locking的区间为：</p>
+<pre><code>(-00 ,10]
+(10,11]
+(11， 13]
+(13, 20]
+(20,+ ~)
+</code></pre>
+<p>当査询的索引含有唯一属性时，InnoDB存储引擎会对Next-Key Lock进行优化，将其降级为Record Lock,即仅锁住索引本身，而不是范围。（仅适用于查询的列是唯一索引的情况）</p>
+<p>若唯一索引由多个列组成，而査询仅是査找多个唯一索引列中的其中一个，那么査询其实是range类型查询，而不是point类型查询，故InnoDB存储引擎依然使用Next-Key Lock进行锁定。</p>
+<h3 id="幻读问题"><a href="#幻读问题" class="headerlink" title="幻读问题"></a>幻读问题</h3><p>Phantom Problem是指在同一事务下，连续执行两次同样的SQL语句可能导致不同的结果，第二次的SQL语句可能会返回之前不存在的行。</p>
+<p>InnoDB存储引擎默认的事务隔离级别是REPEATABLE READ,在该隔离级别下,其采用Next-Key Locking的方式来加锁。而在事务隔离级别READ COMMITTED下,其仅采用Record Lock。</p>
+<h2 id="事务并发一致性问题"><a href="#事务并发一致性问题" class="headerlink" title="事务并发一致性问题"></a>事务并发一致性问题</h2><h3 id="丢失修改"><a href="#丢失修改" class="headerlink" title="丢失修改"></a>丢失修改</h3><p>T1 和 T2 两个事务都对一个数据进行修改，T1 先修改，T2 随后修改，T2 的修改覆盖了 T1 的修改。</p>
+<p><img src="https://i.imgur.com/vooUmjt.png"></p>
+<h3 id="读脏数据"><a href="#读脏数据" class="headerlink" title="读脏数据"></a>读脏数据</h3><p>T1 修改一个数据，T2 随后读取这个数据。如果 T1 撤销了这次修改，那么 T2 读取的数据是脏数据。</p>
+<p><img src="https://i.imgur.com/FqatQev.png"></p>
+<h3 id="不可重复读"><a href="#不可重复读" class="headerlink" title="不可重复读"></a>不可重复读</h3><p>T2 读取一个数据，T1 对该数据做了修改。如果 T2 再次读取这个数据，此时读取的结果和第一次读取的结果不同。</p>
+<p><img src="https://i.imgur.com/u369vWW.png"></p>
+<h3 id="幻影读"><a href="#幻影读" class="headerlink" title="幻影读"></a>幻影读</h3><p>T1 读取某个范围的数据，T2 在这个范围内插入新的数据，T1 再次读取这个范围的数据，此时读取的结果和和第一次读取的结果不同。</p>
+<p><img src="https://i.imgur.com/7LGip7z.png"></p>
+<p>产生并发不一致性问题主要原因是破坏了事务的隔离性，解决方法是通过并发控制来保证隔离性。并发控制可以通过封锁来实现，但是封锁操作需要用户自己控制，相当复杂。数据库管理系统提供了事务的隔离级别，让用户以一种更轻松的方式处理并发一致性问题。</p>
+<h3 id="事务隔离级别"><a href="#事务隔离级别" class="headerlink" title="事务隔离级别"></a>事务隔离级别</h3><ul>
+<li><p>未提交读（READ UNCOMMITTED） —事务中的修改，即使没有提交，对其它事务也是可见的。</p>
+</li>
+<li><p>提交读（READ COMMITTED） — 一个事务只能读取已经提交的事务所做的修改。换句话说，一个事务所做的修改在提交之前对其它事务是不可见的。</p>
+</li>
+<li><p>可重复读（REPEATABLE READ）—保证在同一个事务中多次读取同样数据的结果是一样的。</p>
+</li>
+<li><p>可串行化（SERIALIZABLE）–强制事务串行执行。</p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">隔离级别</th>
+<th align="center">脏读</th>
+<th align="center">不可重复读</th>
+<th align="center">幻影读</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">未提交读</td>
+<td align="center">√</td>
+<td align="center">√</td>
+<td align="center">√</td>
+</tr>
+<tr>
+<td align="center">提交读</td>
+<td align="center">×</td>
+<td align="center">√</td>
+<td align="center">√</td>
+</tr>
+<tr>
+<td align="center">可重复读</td>
+<td align="center">×</td>
+<td align="center">×</td>
+<td align="center">√</td>
+</tr>
+<tr>
+<td align="center">可串行化</td>
+<td align="center">×</td>
+<td align="center">×</td>
+<td align="center">×</td>
+</tr>
+</tbody></table>
+<h2 id="阻塞"><a href="#阻塞" class="headerlink" title="阻塞"></a>阻塞</h2><p>因为不同锁之间的兼容性关系，在有些时刻一个事务中的锁需要等待另一个事务中的锁释放它所占用的资源，这就是阻塞。阻塞并不是一件坏事，其是为了确保事务可以并发且正常地运行。</p>
+<p>在InnoDB存储引擎中，参数innodb_lock_wait_timeout用来控制等待的时间(默认是50秒)，innodb_rollback_on_timeout用来设定是否在等待超时时对进行中的事务进行回滚操作(默认是OFF,代表不回滚)。</p>
+<p><strong>在默认情况下InnoDB存储引擎不会回滚超时引发的错误异常。其实InnoDB存储引擎在大部分情况下都不会对异常进行回滚。</strong></p>
+<h2 id="锁升级"><a href="#锁升级" class="headerlink" title="锁升级"></a>锁升级</h2><p>锁升级(Lock Escalation)是指将当前锁的粒度降低。举例来说，数据库可以把一个表的1000个行锁升级为一个页锁，或者将页锁升级为表锁。如果在数据库的设计中认为锁是一种稀有资源，而且想避免锁的开销，那数据库中会频繁出现锁升级现象。</p>
+<p>InnoDB存储引擎不存在锁升级的问题。因为其不是根据每个记录来产生行锁的，相<br>反，其根据每个事务访问的每个页对锁进行管理的，采用的是位图的方式。因此不管一<br>个事务锁住页中一个记录还是多个记录，其开销通常都是一致的。</p>
+<blockquote>
+<p>MySQL技术内幕（InnoDB存储引擎）</p>
+<p> <a href="https://github.com/CyC2018/CS-Notes/blob/master/notes/%E6%95%B0%E6%8D%AE%E5%BA%93%E7%B3%BB%E7%BB%9F%E5%8E%9F%E7%90%86.md" title="CS-Note">CS-Note</a></p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>MySQL</category>
+      </categories>
+      <tags>
+        <tag>MySQL</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>solr简单使用</title>
+    <url>/2019/04/02/solr/</url>
+    <content><![CDATA[<h1 id="solr的安装与配置"><a href="#solr的安装与配置" class="headerlink" title="solr的安装与配置"></a>solr的安装与配置</h1><hr>
+<h2 id="solr简介"><a href="#solr简介" class="headerlink" title="solr简介"></a>solr简介</h2><p>　　Solr（读作“solar”）是Apache Lucene项目的开源企业搜索平台。其主要功能包括全文检索、命中标示[1]、分面搜索、动态聚类、数据库集成，以及富文本（如Word、PDF）的处理。Solr是高度可扩展的，并提供了分布式搜索和索引复制。Solr是最流行的企业级搜索引擎，[2]Solr 4还增加了NoSQL支持。[3]</p>
+<p>　　Solr是用Java编写、运行在Servlet容器（如Apache Tomcat或Jetty）的一个独立的全文搜索服务器。 Solr采用了Lucene Java搜索库为核心的全文索引和搜索，并具有类似REST的HTTP&#x2F;XML和JSON的API。 Solr强大的外部配置功能使得无需进行Java编码，便可对其进行调整以适应多种类型的应用程序。Solr有一个插件架构，以支持更多的高级定制。</p>
+<h2 id="solr的安装"><a href="#solr的安装" class="headerlink" title="solr的安装"></a>solr的安装</h2><ol>
+<li><p>下载solr 8.0版并解压 ，下载地址为： <a href="https://www-eu.apache.org/dist/lucene/solr/8.0.0/" title="下载地址">https://www-eu.apache.org/dist/lucene/solr/8.0.0/</a></p>
+</li>
+<li><p>下载并安装tomcat</p>
+</li>
+<li><p>将解压后solr-8.0.0\server\solr-webapp\webapp这个文件夹复制到tomcat的apache-tomcat-9.0.14\webapps文件夹下，并改名为solr（为了方便访问）</p>
+</li>
+<li><p>把solr下example&#x2F;lib&#x2F;ext 目录下的所有的 jar 包，添加到 solr 的工程中(\WEB-INF\lib目录下)。</p>
+</li>
+<li><p>在任意位置创建solr-home 目录如D:\solrhome，然后将solr-8.0.0\server\solr文件夹复制到该目录下</p>
+</li>
+<li><p>创建collection：在solr目录下创建文件夹firstcore（也就是集合），将\solr\configsets\sample_techproducts_configs下的conf文件复制到该目录下</p>
+</li>
+<li><p>关联 solr 及 solrhome。需要修改 solr 工程的 web.xml 文件。</p>
+<pre><code> &lt;env-entry&gt;
+    &lt;env-entry-name&gt;solr/home&lt;/env-entry-name&gt;
+    &lt;env-entry-value&gt;d:\solrhome&lt;/env-entry-value&gt;
+    &lt;env-entry-type&gt;java.lang.String&lt;/env-entry-type&gt;
+ &lt;/env-entry&gt;
+</code></pre>
+</li>
+<li><p>启动tomcat   apache-tomcat-9.0.14\bin\startup.bat</p>
+</li>
+</ol>
+<h2 id="配置中文分析器IK-Analyzer"><a href="#配置中文分析器IK-Analyzer" class="headerlink" title="配置中文分析器IK Analyzer"></a>配置中文分析器IK Analyzer</h2><h3 id="下载IK-Analyzer："><a href="#下载IK-Analyzer：" class="headerlink" title="下载IK Analyzer："></a>下载IK Analyzer：</h3><p>　　　因为solr为8.0版本，网上常见的IK Analyzer版本为IKAnalyzer2012FF_u1.jar无法使用，需要下载最新版本，下载网址为：<a href="https://github.com/magese/ik-analyzer-solr7" title="IK">https://github.com/magese/ik-analyzer-solr7</a></p>
+<h3 id="在solr中配置IK-Analyzer"><a href="#在solr中配置IK-Analyzer" class="headerlink" title="在solr中配置IK Analyzer"></a>在solr中配置IK Analyzer</h3><ol>
+<li><p>将resources目录下的5个配置文件放入的solr的服务Jetty或Tomcat的webapp&#x2F;solr&#x2F;WEB-INF&#x2F;classes&#x2F;目录下;</p>
+<pre><code> ①IKAnalyzer.cfg.xml 
+ ②ext.dic 
+ ③stopword.dic 
+ ④ik.conf 
+ ⑤dynamicdic.txt
+</code></pre>
+</li>
+<li><p>配置的Solr的managed-schema(路径为solr\firstCore\conf)，添加ik分词器，示例如下;</p>
+<pre><code> &lt;！ -  ik分词器 - &gt; 
+ &lt;fieldType name =“text_ik”class =“solr.TextField”&gt; 
+   &lt;analyzer type =“index”&gt; 
+       &lt;tokenizer class =“org.wltea.analyzer.lucene.IKTokenizerFactory”useSmart = “false”conf =“ik.conf”/&gt; 
+       &lt;filter class =“solr.LowerCaseFilterFactory”/&gt; 
+   &lt;/ analyzer&gt; 
+   &lt;analyzer type =“query”&gt; 
+       &lt;tokenizer class =“org.wltea.analyzer.lucene.IKTokenizerFactory” useSmart =“true”conf =“ik.conf”/&gt; 
+       &lt;filter class =“solr.LowerCaseFilterFactory”/&gt; 
+   &lt;/ analyzer&gt; 
+ &lt;/ fieldType&gt;
+</code></pre>
+</li>
+</ol>
+<h2 id="配置域"><a href="#配置域" class="headerlink" title="配置域"></a>配置域</h2><p>　　域相当于数据库的表字段，用户存放数据，因此用户根据业务需要去定义相关的Field（域），一般来说，每一种对应着一种数据，用户对同一种数据进行相同的操作。</p>
+<p>　　域的常用属性：</p>
+<pre><code>•	name：指定域的名称
+•	type：指定域的类型
+•	indexed：是否索引
+•	stored：是否存储
+•	required：是否必须
+•	multiValued：是否多值
+</code></pre>
+<h3 id="域"><a href="#域" class="headerlink" title="域"></a>域</h3><p>修改solrhome的schema.xml文件,添加field</p>
+<pre><code>&lt;field name=&quot;item_title&quot; type=&quot;text_ik&quot; indexed=&quot;true&quot; stored=&quot;true&quot;/&gt;
+</code></pre>
+<h3 id="复制域"><a href="#复制域" class="headerlink" title="复制域"></a>复制域</h3><p>复制域的作用在于将某一个Field中的数据复制到另一个域中(可以用于多字段搜索)</p>
+<pre><code>&lt;field name=&quot;item_keywords&quot; type=&quot;text_ik&quot; indexed=&quot;true&quot; stored=&quot;false&quot; multiValued=&quot;true&quot;/&gt;
+&lt;copyField source=&quot;item_title&quot; dest=&quot;item_keywords&quot;/&gt;
+&lt;copyField source=&quot;item_name&quot; dest=&quot;item_keywords&quot;/&gt;
+</code></pre>
+<h3 id="动态域"><a href="#动态域" class="headerlink" title="动态域"></a>动态域</h3><p>当我们需要动态扩充字段时，我们需要使用动态域。需要实现的效果如下：</p>
+<pre><code>&lt;dynamicField name=&quot;item_spec_*&quot; type=&quot;string&quot; indexed=&quot;true&quot; stored=&quot;true&quot; /&gt;	
+</code></pre>
+<h1 id="Spring-Data-Solr的简单使用"><a href="#Spring-Data-Solr的简单使用" class="headerlink" title="Spring Data Solr的简单使用"></a>Spring Data Solr的简单使用</h1><h2 id="入门demo"><a href="#入门demo" class="headerlink" title="入门demo"></a>入门demo</h2><ol>
+<li><p>创建maven工程，pom.xml中引入依赖</p>
+<pre><code> &lt;dependencies&gt;
+     &lt;dependency&gt;
+         &lt;groupId&gt;org.springframework.data&lt;/groupId&gt;
+         &lt;artifactId&gt;spring-data-solr&lt;/artifactId&gt;
+         &lt;version&gt;1.5.5.RELEASE&lt;/version&gt;
+     &lt;/dependency&gt; 
+     &lt;dependency&gt;
+         &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+         &lt;artifactId&gt;spring-test&lt;/artifactId&gt;
+         &lt;version&gt;4.2.4.RELEASE&lt;/version&gt;
+     &lt;/dependency&gt;
+     &lt;dependency&gt;
+         &lt;groupId&gt;junit&lt;/groupId&gt;
+         &lt;artifactId&gt;junit&lt;/artifactId&gt;
+         &lt;version&gt;4.9&lt;/version&gt;
+     &lt;/dependency&gt;
+ &lt;/dependencies&gt;
+</code></pre>
+</li>
+<li><p>在src&#x2F;main&#x2F;resources下创建  applicationContext-solr.xml</p>
+<pre><code> &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+ &lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
+     xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:p=&quot;http://www.springframework.org/schema/p&quot;
+     xmlns:context=&quot;http://www.springframework.org/schema/context&quot;
+     xmlns:solr=&quot;http://www.springframework.org/schema/data/solr&quot;
+     xsi:schemaLocation=&quot;http://www.springframework.org/schema/data/solr 
+           http://www.springframework.org/schema/data/solr/spring-solr-1.0.xsd
+         http://www.springframework.org/schema/beans 
+         http://www.springframework.org/schema/beans/spring-beans.xsd
+         http://www.springframework.org/schema/context 
+         http://www.springframework.org/schema/context/spring-context.xsd&quot;&gt;
+     &lt;!-- solr服务器地址,记得加上集合名 --&gt;
+     &lt;solr:solr-server id=&quot;solrServer&quot; url=&quot;http://127.0.0.1:8080/solr/firstcore&quot; /&gt;
+     &lt;!-- solr模板，使用solr模板可对索引库进行CRUD的操作 --&gt;
+     &lt;bean id=&quot;solrTemplate&quot; class=&quot;org.springframework.data.solr.core.SolrTemplate&quot;&gt;
+         &lt;constructor-arg ref=&quot;solrServer&quot; /&gt;
+     &lt;/bean&gt;
+ &lt;/beans&gt;
+</code></pre>
+</li>
+<li><p>将需要导入solr的实体类添加注解@Field</p>
+<p>  如果属性与配置文件定义的域名称不一致，需要在注解中指定域名称。如同下面的title，在solr的配置文件中名为item_title, 所以要加上注解<code>@Field(&quot;item_titel&quot;)</code>,其他也一样。（）</p>
+<pre><code> public class TbItem implements Serializable&#123;
+
+     @Field
+     private Long id;
+ 
+     @Field(&quot;item_title&quot;)
+     private String title;
+         
+     @Field(&quot;item_price&quot;)
+     private BigDecimal price;
+ 
+    
+ &#125;
+</code></pre>
+</li>
+<li><p>创建测试类TestTemplate.java</p>
+<pre><code> @RunWith(SpringJUnit4ClassRunner.class)
+ @ContextConfiguration(locations=&quot;classpath:applicationContext-solr.xml&quot;)
+ public class TestTemplate &#123;
+ 
+     @Autowired
+     private SolrTemplate solrTemplate;
+
+     //增加到solr索引库
+     @Test
+     public void testAdd()&#123;
+         TbItem item=new TbItem();
+         item.setId(1L);
+         item.setTitle(&quot;barktegh&quot;);
+         item.setPrice(new BigDecimal(2000));		
+         solrTemplate.saveBean(item);
+         solrTemplate.commit();
+     &#125;
+
+     //按主键查询
+     @Test
+     public void testFindOne()&#123;
+         TbItem item = solrTemplate.getById(1, TbItem.class);
+         System.out.println(item.getTitle());
+     &#125;
+
+     //循环项solr插入数据
+     @Test
+     public void testAddList()&#123;
+         List&lt;TbItem&gt; list=new ArrayList();
+         
+         for(int i=0;i&lt;100;i++)&#123;
+             TbItem item=new TbItem();
+             item.setId(i+1L);
+             item.setTitle(&quot;华为Mate&quot;+i);
+             item.setPrice(new BigDecimal(2000+i));	
+             list.add(item);
+         &#125;
+         
+         solrTemplate.saveBeans(list);
+         solrTemplate.commit();
+     &#125;
+
+     //分页查询
+     @Test
+     public void testPageQuery()&#123;
+         Query query=new SimpleQuery(&quot;*:*&quot;);
+         query.setOffset(20);//开始索引（默认0）
+         query.setRows(20);//每页记录数(默认10)
+         ScoredPage&lt;TbItem&gt; page = solrTemplate.queryForPage(query, TbItem.class);
+         System.out.println(&quot;总记录数：&quot;+page.getTotalElements());
+         List&lt;TbItem&gt; list = page.getContent();
+         showList(list);
+     &#125;	
+
+
+
+     //条件查询
+     @Test
+     public void testPageQueryMutil()&#123;	
+         Query query=new SimpleQuery(&quot;*:*&quot;);
+         Criteria criteria=new Criteria(&quot;item_title&quot;).contains(&quot;2&quot;);
+         criteria=criteria.and(&quot;item_title&quot;).contains(&quot;5&quot;);		
+         query.addCriteria(criteria);
+         //query.setOffset(20);//开始索引（默认0）
+         //query.setRows(20);//每页记录数(默认10)
+         ScoredPage&lt;TbItem&gt; page = solrTemplate.queryForPage(query, TbItem.class);
+         System.out.println(&quot;总记录数：&quot;+page.getTotalElements());
+         List&lt;TbItem&gt; list = page.getContent();
+         showList(list);
+     &#125;
+     
+     //删除全部数据
+     @Test
+     public void testDeleteAll()&#123;
+         Query query=new SimpleQuery(&quot;*:*&quot;);
+         solrTemplate.delete(query);
+         solrTemplate.commit();
+     &#125;
+
+
+     //显示记录数据
+     private void showList(List&lt;TbItem&gt; list)&#123;		
+         for(TbItem item:list)&#123;
+             System.out.println(item.getTitle() +item.getPrice());
+         &#125;		
+     &#125;
+
+ &#125;
+</code></pre>
+</li>
+<li><p>在 <a href="http://127.0.0.1:8080/solr">http://127.0.0.1:8080/solr</a> 可以查询到数据变化</p>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>solr</category>
+        <category>spring</category>
+      </categories>
+      <tags>
+        <tag>solr</tag>
+        <tag>spring-data-solr</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>spring装配</title>
+    <url>/2019/01/21/spring%E8%A3%85%E9%85%8D/</url>
+    <content><![CDATA[<h2 id="Spring装配Bean"><a href="#Spring装配Bean" class="headerlink" title="Spring装配Bean"></a>Spring装配Bean</h2><hr>
+<p>Spring容器配置的三种主要的装配机制：</p>
+<blockquote>
+<ul>
+<li>在XML中进行显示配置</li>
+<li>在Java中进行显式配置</li>
+<li>隐式的bean发现机制和自动装配</li>
+</ul>
+</blockquote>
+<h3 id="1-自动装配"><a href="#1-自动装配" class="headerlink" title="1-自动装配"></a>1-自动装配</h3><p>Spring从两个角度实现自动化装配：</p>
+<blockquote>
+<ul>
+<li>组件扫描（component scanning） 自动发现应用上下文中所创建的bean</li>
+<li>自动装配（autowiring） Spring自动满足bean之间的依赖</li>
+</ul>
+</blockquote>
+<p>  使用@Component注解来告诉Spring为这个类创建bean</p>
+<pre><code>@Component
+public class CDPlayer implements MediaPlayer &#123;
+  private CompactDisc cd;
+
+  @Autowired
+  public CDPlayer(CompactDisc cd) &#123;
+    this.cd = cd;
+  &#125;
+
+  public void play() &#123;
+    cd.play();
+  &#125;
+
+&#125;
+</code></pre>
+<p>通过设置组件扫描可以不用显示配置bean。但是组件扫描默认是不启用的。所以要通过配置来启用。</p>
+<ul>
+<li><p>在java配置类中开启组件扫描@ComponentScan</p>
+<pre><code>  @Configuration
+  @ComponentScan
+  public class CDPlayerConfig &#123; 
+  &#125;
+</code></pre>
+</li>
+</ul>
+<p>因为@ComponentScan会扫描与配置类相同的包。可以通过下面两个配置来设置扫描的包：</p>
+<blockquote>
+<ul>
+<li>@ComponentScan(basePackages&#x3D;{“soundsystem,”sdd”})<blockquote>
+<p>扫描包的名字</p>
+</blockquote>
+</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>@ComponentScan(basePackageClasses&#x3D;{CDplayer.class,DVDPlayer.class})<blockquote>
+<p>扫描类所在的包</p>
+</blockquote>
+</li>
+</ul>
+</blockquote>
+<ul>
+<li><p>在XML中开启组件扫描</p>
+<pre><code>  &lt;context:component-scan base-package=&quot;soundsystem&quot; /&gt;
+</code></pre>
+</li>
+<li><p>为组件扫描的bean命名</p>
+<blockquote>
+<ul>
+<li>通过@Component注解</li>
+</ul>
+</blockquote>
+<p>  @Component(“sgtPerr”)<br>  public class SgtPeppers implements CompactDisc {</p>
+<pre><code>private String title = &quot;Sgt. Pepper&#39;s Lonely Hearts Club Band&quot;;  
+private String artist = &quot;The Beatles&quot;;
+
+public void play() &#123;
+  System.out.println(&quot;Playing &quot; + title + &quot; by &quot; + artist);
+&#125;
+</code></pre>
+<p>  }</p>
+</li>
+</ul>
+<blockquote>
+<ul>
+<li>通过@Named注解</li>
+</ul>
+</blockquote>
+<pre><code>@Named(&quot;sgtPerr&quot;)
+public class SgtPeppers implements CompactDisc &#123;
+
+&#125;
+</code></pre>
+<h3 id="2-JAVA代码装配Bean"><a href="#2-JAVA代码装配Bean" class="headerlink" title="2- JAVA代码装配Bean"></a>2- JAVA代码装配Bean</h3><p>通过配置类来实现装配Bean</p>
+<pre><code>@Configuration //表明这是一个配置类
+public class CDPlayerConfig &#123;
+  
+  @Bean //声明这是一个bean
+  public CompactDisc compactDisc() &#123;
+    return new SgtPeppers();
+  &#125;
+
+  @Bean
+    //通过构造器注入
+  public CDPlayer cdPlayer(CompactDisc compactDisc) &#123;
+    return new CDPlayer(compactDisc);
+  &#125;
+
+  @Bean 
+    //通过setter方法注入
+  public CDPlayer cdPlayer(CompactDisc compactDisc) &#123;
+    CDPlayer cdPlayer = new CDPlayer(compactDisc);
+    cdPlayer.setCompactDisc(compactDisc);
+    return cdPlayer
+  &#125;
+
+&#125;
+</code></pre>
+<h3 id="3-通过XML装配bean"><a href="#3-通过XML装配bean" class="headerlink" title="3- 通过XML装配bean"></a>3- 通过XML装配bean</h3><blockquote>
+<ul>
+<li>通过构造器注入</li>
+</ul>
+</blockquote>
+<pre><code>&lt;bean id=&quot;compactDisc&quot; class=&quot;soundsystem.collections.BlankDisc&quot;&gt;
+    &lt;constructor-arg value=&quot;Sgt. Pepper&#39;s Lonely Hearts Club Band&quot; /&gt;
+    &lt;constructor-arg value=&quot;The Beatles&quot; /&gt;
+    &lt;constructor-arg&gt;
+      &lt;list&gt;
+        &lt;value&gt;Sgt. Pepper&#39;s Lonely Hearts Club Band&lt;/value&gt;
+        &lt;value&gt;With a Little Help from My Friends&lt;/value&gt;
+        &lt;value&gt;Lucy in the Sky with Diamonds&lt;/value&gt;
+        &lt;value&gt;Getting Better&lt;/value&gt;
+        &lt;value&gt;Fixing a Hole&lt;/value&gt;
+        &lt;value&gt;She&#39;s Leaving Home&lt;/value&gt;
+        &lt;value&gt;Being for the Benefit of Mr. Kite!&lt;/value&gt;
+        &lt;value&gt;Within You Without You&lt;/value&gt;
+        &lt;value&gt;When I&#39;m Sixty-Four&lt;/value&gt;
+        &lt;value&gt;Lovely Rita&lt;/value&gt;
+        &lt;value&gt;Good Morning Good Morning&lt;/value&gt;
+        &lt;value&gt;Sgt. Pepper&#39;s Lonely Hearts Club Band (Reprise)&lt;/value&gt;
+        &lt;value&gt;A Day in the Life&lt;/value&gt;
+      &lt;/list&gt;
+    &lt;/constructor-arg&gt;
+  &lt;/bean&gt;
+</code></pre>
+<blockquote>
+<ul>
+<li>通过setter注入</li>
+</ul>
+</blockquote>
+<pre><code> &lt;bean id=&quot;compactDisc&quot;
+    class=&quot;soundsystem.properties.BlankDisc&quot;&gt;
+    &lt;property name=&quot;title&quot; value=&quot;Sgt. Pepper&#39;s Lonely Hearts Club Band&quot; /&gt;
+    &lt;property name=&quot;artist&quot; value=&quot;The Beatles&quot; /&gt;
+    &lt;property name=&quot;tracks&quot;&gt;
+      &lt;list&gt;
+        &lt;value&gt;Sgt. Pepper&#39;s Lonely Hearts Club Band&lt;/value&gt;
+        &lt;value&gt;With a Little Help from My Friends&lt;/value&gt;
+        &lt;value&gt;Lucy in the Sky with Diamonds&lt;/value&gt;
+        &lt;value&gt;Getting Better&lt;/value&gt;
+        &lt;value&gt;Fixing a Hole&lt;/value&gt;
+        &lt;value&gt;She&#39;s Leaving Home&lt;/value&gt;
+        &lt;value&gt;Being for the Benefit of Mr. Kite!&lt;/value&gt;
+        &lt;value&gt;Within You Without You&lt;/value&gt;
+        &lt;value&gt;When I&#39;m Sixty-Four&lt;/value&gt;
+        &lt;value&gt;Lovely Rita&lt;/value&gt;
+        &lt;value&gt;Good Morning Good Morning&lt;/value&gt;
+        &lt;value&gt;Sgt. Pepper&#39;s Lonely Hearts Club Band (Reprise)&lt;/value&gt;
+        &lt;value&gt;A Day in the Life&lt;/value&gt;
+      &lt;/list&gt;
+    &lt;/property&gt;
+  &lt;/bean&gt;
+</code></pre>
+<h3 id="4-混合配置"><a href="#4-混合配置" class="headerlink" title="4-混合配置"></a>4-混合配置</h3><ul>
+<li><p>在javaConfig引用xml配置</p>
+<pre><code>  @Configuration
+  @Import(CDPlayerConfig.class) //导入其他的java配置
+  @ImportResource(&quot;classpath:cd-config.xml&quot;) // 导入xml配置
+  public class SoundSystemConfig &#123;
+  
+  &#125;
+</code></pre>
+</li>
+<li><p>在xml配置中引用javaconfig</p>
+<pre><code>  &lt;bean class=&quot;soundsystem.CDConfig&quot; /&gt; 导入config配置类
+  &lt;import resource=&quot;cd-player-config.xml&quot;/&gt; 导入xml配置
+</code></pre>
+</li>
+</ul>
+<hr>
+<p>##高级装配</p>
+<h3 id="1-环境与profile"><a href="#1-环境与profile" class="headerlink" title="1- 环境与profile"></a>1- 环境与profile</h3>]]></content>
+      <categories>
+        <category>java</category>
+      </categories>
+      <tags>
+        <tag>spring</tag>
+        <tag>java</tag>
       </tags>
   </entry>
   <entry>
@@ -3429,244 +3868,6 @@ int dbnum;
       </tags>
   </entry>
   <entry>
-    <title>solr简单使用</title>
-    <url>/2019/04/02/solr/</url>
-    <content><![CDATA[<h1 id="solr的安装与配置"><a href="#solr的安装与配置" class="headerlink" title="solr的安装与配置"></a>solr的安装与配置</h1><hr>
-<h2 id="solr简介"><a href="#solr简介" class="headerlink" title="solr简介"></a>solr简介</h2><p>　　Solr（读作“solar”）是Apache Lucene项目的开源企业搜索平台。其主要功能包括全文检索、命中标示[1]、分面搜索、动态聚类、数据库集成，以及富文本（如Word、PDF）的处理。Solr是高度可扩展的，并提供了分布式搜索和索引复制。Solr是最流行的企业级搜索引擎，[2]Solr 4还增加了NoSQL支持。[3]</p>
-<p>　　Solr是用Java编写、运行在Servlet容器（如Apache Tomcat或Jetty）的一个独立的全文搜索服务器。 Solr采用了Lucene Java搜索库为核心的全文索引和搜索，并具有类似REST的HTTP&#x2F;XML和JSON的API。 Solr强大的外部配置功能使得无需进行Java编码，便可对其进行调整以适应多种类型的应用程序。Solr有一个插件架构，以支持更多的高级定制。</p>
-<h2 id="solr的安装"><a href="#solr的安装" class="headerlink" title="solr的安装"></a>solr的安装</h2><ol>
-<li><p>下载solr 8.0版并解压 ，下载地址为： <a href="https://www-eu.apache.org/dist/lucene/solr/8.0.0/" title="下载地址">https://www-eu.apache.org/dist/lucene/solr/8.0.0/</a></p>
-</li>
-<li><p>下载并安装tomcat</p>
-</li>
-<li><p>将解压后solr-8.0.0\server\solr-webapp\webapp这个文件夹复制到tomcat的apache-tomcat-9.0.14\webapps文件夹下，并改名为solr（为了方便访问）</p>
-</li>
-<li><p>把solr下example&#x2F;lib&#x2F;ext 目录下的所有的 jar 包，添加到 solr 的工程中(\WEB-INF\lib目录下)。</p>
-</li>
-<li><p>在任意位置创建solr-home 目录如D:\solrhome，然后将solr-8.0.0\server\solr文件夹复制到该目录下</p>
-</li>
-<li><p>创建collection：在solr目录下创建文件夹firstcore（也就是集合），将\solr\configsets\sample_techproducts_configs下的conf文件复制到该目录下</p>
-</li>
-<li><p>关联 solr 及 solrhome。需要修改 solr 工程的 web.xml 文件。</p>
-<pre><code> &lt;env-entry&gt;
-    &lt;env-entry-name&gt;solr/home&lt;/env-entry-name&gt;
-    &lt;env-entry-value&gt;d:\solrhome&lt;/env-entry-value&gt;
-    &lt;env-entry-type&gt;java.lang.String&lt;/env-entry-type&gt;
- &lt;/env-entry&gt;
-</code></pre>
-</li>
-<li><p>启动tomcat   apache-tomcat-9.0.14\bin\startup.bat</p>
-</li>
-</ol>
-<h2 id="配置中文分析器IK-Analyzer"><a href="#配置中文分析器IK-Analyzer" class="headerlink" title="配置中文分析器IK Analyzer"></a>配置中文分析器IK Analyzer</h2><h3 id="下载IK-Analyzer："><a href="#下载IK-Analyzer：" class="headerlink" title="下载IK Analyzer："></a>下载IK Analyzer：</h3><p>　　　因为solr为8.0版本，网上常见的IK Analyzer版本为IKAnalyzer2012FF_u1.jar无法使用，需要下载最新版本，下载网址为：<a href="https://github.com/magese/ik-analyzer-solr7" title="IK">https://github.com/magese/ik-analyzer-solr7</a></p>
-<h3 id="在solr中配置IK-Analyzer"><a href="#在solr中配置IK-Analyzer" class="headerlink" title="在solr中配置IK Analyzer"></a>在solr中配置IK Analyzer</h3><ol>
-<li><p>将resources目录下的5个配置文件放入的solr的服务Jetty或Tomcat的webapp&#x2F;solr&#x2F;WEB-INF&#x2F;classes&#x2F;目录下;</p>
-<pre><code> ①IKAnalyzer.cfg.xml 
- ②ext.dic 
- ③stopword.dic 
- ④ik.conf 
- ⑤dynamicdic.txt
-</code></pre>
-</li>
-<li><p>配置的Solr的managed-schema(路径为solr\firstCore\conf)，添加ik分词器，示例如下;</p>
-<pre><code> &lt;！ -  ik分词器 - &gt; 
- &lt;fieldType name =“text_ik”class =“solr.TextField”&gt; 
-   &lt;analyzer type =“index”&gt; 
-       &lt;tokenizer class =“org.wltea.analyzer.lucene.IKTokenizerFactory”useSmart = “false”conf =“ik.conf”/&gt; 
-       &lt;filter class =“solr.LowerCaseFilterFactory”/&gt; 
-   &lt;/ analyzer&gt; 
-   &lt;analyzer type =“query”&gt; 
-       &lt;tokenizer class =“org.wltea.analyzer.lucene.IKTokenizerFactory” useSmart =“true”conf =“ik.conf”/&gt; 
-       &lt;filter class =“solr.LowerCaseFilterFactory”/&gt; 
-   &lt;/ analyzer&gt; 
- &lt;/ fieldType&gt;
-</code></pre>
-</li>
-</ol>
-<h2 id="配置域"><a href="#配置域" class="headerlink" title="配置域"></a>配置域</h2><p>　　域相当于数据库的表字段，用户存放数据，因此用户根据业务需要去定义相关的Field（域），一般来说，每一种对应着一种数据，用户对同一种数据进行相同的操作。</p>
-<p>　　域的常用属性：</p>
-<pre><code>•	name：指定域的名称
-•	type：指定域的类型
-•	indexed：是否索引
-•	stored：是否存储
-•	required：是否必须
-•	multiValued：是否多值
-</code></pre>
-<h3 id="域"><a href="#域" class="headerlink" title="域"></a>域</h3><p>修改solrhome的schema.xml文件,添加field</p>
-<pre><code>&lt;field name=&quot;item_title&quot; type=&quot;text_ik&quot; indexed=&quot;true&quot; stored=&quot;true&quot;/&gt;
-</code></pre>
-<h3 id="复制域"><a href="#复制域" class="headerlink" title="复制域"></a>复制域</h3><p>复制域的作用在于将某一个Field中的数据复制到另一个域中(可以用于多字段搜索)</p>
-<pre><code>&lt;field name=&quot;item_keywords&quot; type=&quot;text_ik&quot; indexed=&quot;true&quot; stored=&quot;false&quot; multiValued=&quot;true&quot;/&gt;
-&lt;copyField source=&quot;item_title&quot; dest=&quot;item_keywords&quot;/&gt;
-&lt;copyField source=&quot;item_name&quot; dest=&quot;item_keywords&quot;/&gt;
-</code></pre>
-<h3 id="动态域"><a href="#动态域" class="headerlink" title="动态域"></a>动态域</h3><p>当我们需要动态扩充字段时，我们需要使用动态域。需要实现的效果如下：</p>
-<pre><code>&lt;dynamicField name=&quot;item_spec_*&quot; type=&quot;string&quot; indexed=&quot;true&quot; stored=&quot;true&quot; /&gt;	
-</code></pre>
-<h1 id="Spring-Data-Solr的简单使用"><a href="#Spring-Data-Solr的简单使用" class="headerlink" title="Spring Data Solr的简单使用"></a>Spring Data Solr的简单使用</h1><h2 id="入门demo"><a href="#入门demo" class="headerlink" title="入门demo"></a>入门demo</h2><ol>
-<li><p>创建maven工程，pom.xml中引入依赖</p>
-<pre><code> &lt;dependencies&gt;
-     &lt;dependency&gt;
-         &lt;groupId&gt;org.springframework.data&lt;/groupId&gt;
-         &lt;artifactId&gt;spring-data-solr&lt;/artifactId&gt;
-         &lt;version&gt;1.5.5.RELEASE&lt;/version&gt;
-     &lt;/dependency&gt; 
-     &lt;dependency&gt;
-         &lt;groupId&gt;org.springframework&lt;/groupId&gt;
-         &lt;artifactId&gt;spring-test&lt;/artifactId&gt;
-         &lt;version&gt;4.2.4.RELEASE&lt;/version&gt;
-     &lt;/dependency&gt;
-     &lt;dependency&gt;
-         &lt;groupId&gt;junit&lt;/groupId&gt;
-         &lt;artifactId&gt;junit&lt;/artifactId&gt;
-         &lt;version&gt;4.9&lt;/version&gt;
-     &lt;/dependency&gt;
- &lt;/dependencies&gt;
-</code></pre>
-</li>
-<li><p>在src&#x2F;main&#x2F;resources下创建  applicationContext-solr.xml</p>
-<pre><code> &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
- &lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
-     xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:p=&quot;http://www.springframework.org/schema/p&quot;
-     xmlns:context=&quot;http://www.springframework.org/schema/context&quot;
-     xmlns:solr=&quot;http://www.springframework.org/schema/data/solr&quot;
-     xsi:schemaLocation=&quot;http://www.springframework.org/schema/data/solr 
-           http://www.springframework.org/schema/data/solr/spring-solr-1.0.xsd
-         http://www.springframework.org/schema/beans 
-         http://www.springframework.org/schema/beans/spring-beans.xsd
-         http://www.springframework.org/schema/context 
-         http://www.springframework.org/schema/context/spring-context.xsd&quot;&gt;
-     &lt;!-- solr服务器地址,记得加上集合名 --&gt;
-     &lt;solr:solr-server id=&quot;solrServer&quot; url=&quot;http://127.0.0.1:8080/solr/firstcore&quot; /&gt;
-     &lt;!-- solr模板，使用solr模板可对索引库进行CRUD的操作 --&gt;
-     &lt;bean id=&quot;solrTemplate&quot; class=&quot;org.springframework.data.solr.core.SolrTemplate&quot;&gt;
-         &lt;constructor-arg ref=&quot;solrServer&quot; /&gt;
-     &lt;/bean&gt;
- &lt;/beans&gt;
-</code></pre>
-</li>
-<li><p>将需要导入solr的实体类添加注解@Field</p>
-<p>  如果属性与配置文件定义的域名称不一致，需要在注解中指定域名称。如同下面的title，在solr的配置文件中名为item_title, 所以要加上注解<code>@Field(&quot;item_titel&quot;)</code>,其他也一样。（）</p>
-<pre><code> public class TbItem implements Serializable&#123;
-
-     @Field
-     private Long id;
- 
-     @Field(&quot;item_title&quot;)
-     private String title;
-         
-     @Field(&quot;item_price&quot;)
-     private BigDecimal price;
- 
-    
- &#125;
-</code></pre>
-</li>
-<li><p>创建测试类TestTemplate.java</p>
-<pre><code> @RunWith(SpringJUnit4ClassRunner.class)
- @ContextConfiguration(locations=&quot;classpath:applicationContext-solr.xml&quot;)
- public class TestTemplate &#123;
- 
-     @Autowired
-     private SolrTemplate solrTemplate;
-
-     //增加到solr索引库
-     @Test
-     public void testAdd()&#123;
-         TbItem item=new TbItem();
-         item.setId(1L);
-         item.setTitle(&quot;barktegh&quot;);
-         item.setPrice(new BigDecimal(2000));		
-         solrTemplate.saveBean(item);
-         solrTemplate.commit();
-     &#125;
-
-     //按主键查询
-     @Test
-     public void testFindOne()&#123;
-         TbItem item = solrTemplate.getById(1, TbItem.class);
-         System.out.println(item.getTitle());
-     &#125;
-
-     //循环项solr插入数据
-     @Test
-     public void testAddList()&#123;
-         List&lt;TbItem&gt; list=new ArrayList();
-         
-         for(int i=0;i&lt;100;i++)&#123;
-             TbItem item=new TbItem();
-             item.setId(i+1L);
-             item.setTitle(&quot;华为Mate&quot;+i);
-             item.setPrice(new BigDecimal(2000+i));	
-             list.add(item);
-         &#125;
-         
-         solrTemplate.saveBeans(list);
-         solrTemplate.commit();
-     &#125;
-
-     //分页查询
-     @Test
-     public void testPageQuery()&#123;
-         Query query=new SimpleQuery(&quot;*:*&quot;);
-         query.setOffset(20);//开始索引（默认0）
-         query.setRows(20);//每页记录数(默认10)
-         ScoredPage&lt;TbItem&gt; page = solrTemplate.queryForPage(query, TbItem.class);
-         System.out.println(&quot;总记录数：&quot;+page.getTotalElements());
-         List&lt;TbItem&gt; list = page.getContent();
-         showList(list);
-     &#125;	
-
-
-
-     //条件查询
-     @Test
-     public void testPageQueryMutil()&#123;	
-         Query query=new SimpleQuery(&quot;*:*&quot;);
-         Criteria criteria=new Criteria(&quot;item_title&quot;).contains(&quot;2&quot;);
-         criteria=criteria.and(&quot;item_title&quot;).contains(&quot;5&quot;);		
-         query.addCriteria(criteria);
-         //query.setOffset(20);//开始索引（默认0）
-         //query.setRows(20);//每页记录数(默认10)
-         ScoredPage&lt;TbItem&gt; page = solrTemplate.queryForPage(query, TbItem.class);
-         System.out.println(&quot;总记录数：&quot;+page.getTotalElements());
-         List&lt;TbItem&gt; list = page.getContent();
-         showList(list);
-     &#125;
-     
-     //删除全部数据
-     @Test
-     public void testDeleteAll()&#123;
-         Query query=new SimpleQuery(&quot;*:*&quot;);
-         solrTemplate.delete(query);
-         solrTemplate.commit();
-     &#125;
-
-
-     //显示记录数据
-     private void showList(List&lt;TbItem&gt; list)&#123;		
-         for(TbItem item:list)&#123;
-             System.out.println(item.getTitle() +item.getPrice());
-         &#125;		
-     &#125;
-
- &#125;
-</code></pre>
-</li>
-<li><p>在 <a href="http://127.0.0.1:8080/solr">http://127.0.0.1:8080/solr</a> 可以查询到数据变化</p>
-</li>
-</ol>
-]]></content>
-      <categories>
-        <category>solr</category>
-        <category>spring</category>
-      </categories>
-      <tags>
-        <tag>solr</tag>
-        <tag>spring-data-solr</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>stanfordCoreNLP的使用方式</title>
     <url>/2019/01/21/stanfordCoreNLP%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F/</url>
     <content><![CDATA[<p>#使用Standford Core NLP的几种方法</p>
@@ -3705,204 +3906,337 @@ t1 = list(self.sent_parser.parse((senten,))
       </tags>
   </entry>
   <entry>
-    <title>spring装配</title>
-    <url>/2019/01/21/spring%E8%A3%85%E9%85%8D/</url>
-    <content><![CDATA[<h2 id="Spring装配Bean"><a href="#Spring装配Bean" class="headerlink" title="Spring装配Bean"></a>Spring装配Bean</h2><hr>
-<p>Spring容器配置的三种主要的装配机制：</p>
-<blockquote>
-<ul>
-<li>在XML中进行显示配置</li>
-<li>在Java中进行显式配置</li>
-<li>隐式的bean发现机制和自动装配</li>
-</ul>
-</blockquote>
-<h3 id="1-自动装配"><a href="#1-自动装配" class="headerlink" title="1-自动装配"></a>1-自动装配</h3><p>Spring从两个角度实现自动化装配：</p>
-<blockquote>
-<ul>
-<li>组件扫描（component scanning） 自动发现应用上下文中所创建的bean</li>
-<li>自动装配（autowiring） Spring自动满足bean之间的依赖</li>
-</ul>
-</blockquote>
-<p>  使用@Component注解来告诉Spring为这个类创建bean</p>
-<pre><code>@Component
-public class CDPlayer implements MediaPlayer &#123;
-  private CompactDisc cd;
+    <title>秒杀系统的优化</title>
+    <url>/2019/06/01/%E7%A7%92%E6%9D%80%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BC%98%E5%8C%96/</url>
+    <content><![CDATA[<hr>
+<h2 id="秒杀系统简介"><a href="#秒杀系统简介" class="headerlink" title="秒杀系统简介"></a>秒杀系统简介</h2><p>秒杀场景一般会在电商网站举行一些活动或者节假日在12306网站上抢票时遇到。对于电商网站中一些稀缺或者特价商品，电商网站一般会在约定时间点对其进行限量销售，因为这些商品的特殊性，会吸引大量用户前来抢购，并且会在约定的时间点同时在秒杀页面进行抢购。</p>
+<p>秒杀系统主要面临三大问题：
+    </p>
+<p>一、瞬时的高并发访问。抢购和普通的电商销售有所不同，普通的电商销售，流量是比较平均的，虽然有波峰波谷，但不会特别突出。而抢购是在特定时间点进行的推销活动，抢购开始前，用户不断刷新页面，以获得购买按钮；抢购开始的一瞬间，集中并发购买。 
+   </p>
+<p>二、数据正确性。抢购毕竟是一种购买行为，需要购买、扣减库存、支付等复杂的流程，在此过程中，要保证数据的正确性，防止超卖（卖出量超过库存）的发生。 
+   </p>
+<p>三、防作弊。</p>
+<h2 id="秒杀系统的设计理念"><a href="#秒杀系统的设计理念" class="headerlink" title="秒杀系统的设计理念"></a>秒杀系统的设计理念</h2><p>秒杀系统的优化或者设计理念为以下几点：</p>
+<p>限流： 鉴于只有少部分用户能够秒杀成功，所以要限制大部分流量，只允许少部分流量进入服务后端。</p>
+<p>削峰：对于秒杀系统瞬时会有大量用户涌入，所以在抢购一开始会有很高的瞬间峰值。高峰值流量是压垮系统很重要的原因，所以如何把瞬间的高流量变成一段时间平稳的流量也是设计秒杀系统很重要的思路。实现削峰的常用的方法有利用缓存和消息中间件等技术。</p>
+<p>异步处理：秒杀系统是一个高并发系统，采用异步处理模式可以极大地提高系统并发量，其实异步处理就是削峰的一种实现方式。</p>
+<p>内存缓存：秒杀系统最大的瓶颈一般都是数据库读写，由于数据库读写属于磁盘IO，性能很低，如果能够把部分数据或业务逻辑转移到内存缓存，效率会有极大地提升。</p>
+<p>可拓展：当然如果我们想支持更多用户，更大的并发，最好就将系统设计成弹性可拓展的，如果流量来了，拓展机器就好了。像淘宝、京东等双十一活动时会增加大量机器应对交易高峰。</p>
+<h3 id="前端方案"><a href="#前端方案" class="headerlink" title="前端方案"></a>前端方案</h3><p><strong>页面静态化：</strong> 将页面上的所有静态元素全部静态化，将其交给ngix管理，以此同时采用cdn来N来抗峰值；对于动态部分采用Ajex请求动态加载数据</p>
+<p><strong>静态资源优化：</strong>主要是讲多个css&#x2F;js请求合并为一个等。</p>
+<p><strong>秒杀接口隐藏：</strong>在秒杀开始前一段时间才暴露出秒杀的接口（路径），同时在后端可以通过与用户id绑定生成每个用户的秒杀路径，保存在redis中，在固定时间中只允许固定的次数请求，过多的请求被拦截。这样防止使用脚本等进行大批量的请求。</p>
+<p><strong>验证码：</strong>主要是为了流量削峰与筛除简单脚本。通过用户输入验证码的时间，将在某一时间的突发流量均摊到随后的一段时间，还能筛除掉一部分简单的无法识别验证码的脚本。</p>
+<h3 id="后端方案"><a href="#后端方案" class="headerlink" title="后端方案"></a>后端方案</h3><p><strong>用户限流：</strong>通过对用户id绑定生成的秒杀路径，限定访问次数</p>
+<p><strong>redis缓存：</strong> 将数据库内容比如秒杀商品内容详情缓存到redis，不访问数据库</p>
+<p><strong>消息队列：</strong> 通过将请求缓存到消息队列，异步执行来削减同一时间到来的请求。</p>
+<p><strong>CDN：</strong>内容分发网络。其基本思路是尽可能避开互联网上有可能影响数据传输速度和稳定性的瓶颈和环节，使内容传输的更快、更稳定。简单的来说，就是把原服务器上数据复制到其他服务器上，用户访问时，那台服务器近访问到的就是那台服务器上的数据。CDN的劣势是内容的变更生效慢，所以仅适用于“几乎不变”的资源，例如引用的js包，图片等。</p>
+<h2 id="秒杀系统的具体实现"><a href="#秒杀系统的具体实现" class="headerlink" title="秒杀系统的具体实现"></a>秒杀系统的具体实现</h2><p><em>秒杀开始前：</em></p>
+<p>只能看到看到秒杀商品详情，无法进入秒杀接口，直到秒杀开始前一段时间。</p>
+<p>对进入秒杀商品详情页的用户将其uid与秒杀商品gid结合，生成该用户对该秒杀商品的秒杀接口路径，将其保存到redis中。</p>
+<p>在秒杀商品详情页页面采用js脚本来实现倒计时与限制秒杀按钮的电机。</p>
+<p><em>秒杀开始时：</em></p>
+<p>服务端使用redis提前缓存秒杀商品详情，主要参数为库存数量。</p>
+<p>使用redis来实现秒杀商品的预减，不直接访问数据库。当redis中的商品库存少于0，拒绝请求。这样能保证只有少量的请求能够接近数据库。</p>
+<p>将抢到预减的请求放入到消息队列中，将同步转为异步执行，实现流量的再次削峰。</p>
+<p>服务层从消息队列中拿出请求，进行数据库操作，实现真正的商品抢购事务，生成订单；若事务失败，回滚事务，告知用户抢购失败。若事务成功，请求用户确认订单详情，并支付。</p>
+<p><strong>注意事项：</strong></p>
+<p>防止买超： 需要对数据库字段进行设计，添加索引；在服务端需要对库存字段进行限制，保证不为负。</p>
+<p>消息队列： 也可以使用redis来充当消息队列。</p>
+<p>用户限流： 限制用户一段时间内能点击的次数</p>
+<p>IP限流： 方法太过于粗暴，容易误封无辜用户，不推荐。</p>
+]]></content>
+      <categories>
+        <category>java</category>
+        <category>高并发</category>
+      </categories>
+      <tags>
+        <tag>java</tag>
+        <tag>高并发</tag>
+        <tag>秒杀系统</tag>
+        <tag>reids</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>鸿蒙判断应用是否支持某能力</title>
+    <url>/2025/07/21/%E9%B8%BF%E8%92%99%E5%88%A4%E6%96%AD%E5%BA%94%E7%94%A8%E6%98%AF%E5%90%A6%E6%94%AF%E6%8C%81%E6%9F%90%E8%83%BD%E5%8A%9B/</url>
+    <content><![CDATA[<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在鸿蒙系统跨应用能力调用场景中，需解决以下核心问题：被调用方应用的版本是否满足当前所需功能。例如SDK判断抖音是否支持投稿、授权才真正进行拉起抖音，不然会出现拉起抖音后没有任何反应或者能力缺失。因此目标为实现在SDK侧能判断应用是否支持某能力。</p>
+<h2 id="方案对比（太长不看版）"><a href="#方案对比（太长不看版）" class="headerlink" title="方案对比（太长不看版）"></a>方案对比（太长不看版）</h2><table>
+<thead>
+<tr>
+<th>方案</th>
+<th>实现</th>
+<th>是否可用</th>
+<th>是否启动对方进程</th>
+<th>优点</th>
+<th>缺点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>metadata 字段读取</td>
+<td>应用 A 在 module.json5 声明能力及版本号，SDK 侧用 bundleManager 读取</td>
+<td>❌</td>
+<td>不会启动</td>
+<td>读取轻量，性能极高，不依赖进程存活；可以随意自定义字段</td>
+<td>三方应用只能查自身包信息，SDK 无法读取其他应用信息</td>
+</tr>
+<tr>
+<td>DataShareExtensionAbility</td>
+<td>应用 A 侧声明并注册扩展能力，SDK 侧创建 DataShareHelper 查询</td>
+<td>❌</td>
+<td>会启动对方的 DataShareExtensionAbility 进程（但不拉 UI）</td>
+<td>跨应用通用，数据可动态更新。如果能力有问题在App侧可以通过settings修改值来避免拉起却不可用的情况。</td>
+<td>第一次调用耗时（冷启动几十~几百 ms）；IPC 大数据效率低；目前仅对系统应用开放，暂不提供相关内容与指导</td>
+</tr>
+<tr>
+<td>使用 canOpenLink 判断应用是否可访问</td>
+<td>调用方在 module.json5 配置 querySchemes 声明 URL scheme，调用 canOpenLink 接口；目标方配置 uris 属性</td>
+<td>✅</td>
+<td>不会启动</td>
+<td>读取轻量，性能极高，不依赖进程存活</td>
+<td>1. 调用方的 querySchemes 最多配置 50 个 URL scheme  2. 每次新增版本号需要在被调用侧新增 schema 的 host。</td>
+</tr>
+</tbody></table>
+<h2 id="方案调研"><a href="#方案调研" class="headerlink" title="方案调研"></a>方案调研</h2><h3 id="metadata字段读取"><a href="#metadata字段读取" class="headerlink" title="metadata字段读取"></a>metadata字段读取</h3><p><strong>实现</strong></p>
+<p>在应用A侧的module.json5 里声明能力及版本号：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;module&quot;: &#123;</span><br><span class="line">    &quot;abilities&quot;: [</span><br><span class="line">      &#123;</span><br><span class="line">        &quot;name&quot;: &quot;MainAbility&quot;,</span><br><span class="line">        &quot;srcEntry&quot;: &quot;./ets/MainAbility.ets&quot;,</span><br><span class="line">        &quot;label&quot;: &quot;AppA&quot;,</span><br><span class="line">        &quot;metadata&quot;: [</span><br><span class="line">          &#123;</span><br><span class="line">            &quot;name&quot;: &quot;bytedance_open_sdk_support&quot;,</span><br><span class="line">            &quot;value&quot;: &quot;1&quot;</span><br><span class="line">          &#125;</span><br><span class="line">        ]</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-  @Autowired
-  public CDPlayer(CompactDisc cd) &#123;
-    this.cd = cd;
-  &#125;
+<p>在SDK侧使用bundleManager 读取字段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import bundleManager from &#x27;@ohos.bundle.bundleManager&#x27;;</span><br><span class="line"></span><br><span class="line">async function getAppACapabilityVersion(): Promise&lt;string | null&gt; &#123;</span><br><span class="line">  try &#123;</span><br><span class="line">    let bundleInfo = await bundleManager.getBundleInfo(</span><br><span class="line">      &quot;com.example.appA&quot;,  // App A 的包名</span><br><span class="line">      bundleManager.BundleFlag.GET_ABILITY_INFO_WITH_METADATA</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    for (let ability of bundleInfo.abilityInfos) &#123;</span><br><span class="line">      if (ability.metadata) &#123;</span><br><span class="line">        for (let meta of ability.metadata) &#123;</span><br><span class="line">          if (meta.name === &quot;bytedance_open_sdk_support&quot;) &#123;</span><br><span class="line">            console.log(`App A 能力版本号: $&#123;meta.value&#125;`);</span><br><span class="line">            return meta.value; </span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; catch (err) &#123;</span><br><span class="line">    console.error(&quot;读取能力失败: &quot; + JSON.stringify(err));</span><br><span class="line">  &#125;</span><br><span class="line">  return null;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-  public void play() &#123;
-    cd.play();
-  &#125;
+<p><strong>问题</strong></p>
+<p>三方应用目前只能查询到自身应用包的信息，由于安全隐私，暂时不支持查询其他应用。因此在SDK侧无法通过bundleManager读取其他应用的信息。<br><a href="https://developer.huawei.com/consumer/cn/doc/architecture-guides/insurance-v1_2-ts_34-0000002312854248">https://developer.huawei.com/consumer/cn/doc/architecture-guides/insurance-v1_2-ts_34-0000002312854248</a></p>
+<h3 id="DataShareExtensionAbility"><a href="#DataShareExtensionAbility" class="headerlink" title="DataShareExtensionAbility"></a>DataShareExtensionAbility</h3><p><strong>实现</strong></p>
+<p>在应用A侧声明 DataShareExtensionAbility在 ets&#x2F;CustomDataShare.ets 里：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import dataShare from &#x27;@ohos.data.dataShare&#x27;;</span><br><span class="line">import hilog from &#x27;@ohos.hilog&#x27;;</span><br><span class="line"></span><br><span class="line">const TAG: string = &quot;CustomDataShare&quot;;</span><br><span class="line"></span><br><span class="line">export default class CustomDataShare extends dataShare.DataShareExtensionAbility &#123;</span><br><span class="line">  onCreate(want, callback) &#123;</span><br><span class="line">    hilog.info(0x0000, TAG, &quot;DataShareExtensionAbility onCreate&quot;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  // 处理查询请求</span><br><span class="line">  async query(uri, columns, predicates, callback) &#123;</span><br><span class="line">    hilog.info(0x0000, TAG, `query called. uri=$&#123;uri&#125;`);</span><br><span class="line"></span><br><span class="line">    // 模拟返回一个自定义字段</span><br><span class="line">    let resultSet = &#123;</span><br><span class="line">      columnNames: [&quot;customField&quot;],</span><br><span class="line">      rowCount: 1,</span><br><span class="line">      rowIndex: 0,</span><br><span class="line">      getString: (index) =&gt; &#123;</span><br><span class="line">        if (index === 0) return &quot;HelloFromProviderApp&quot;;</span><br><span class="line">        return &quot;&quot;;</span><br><span class="line">      &#125;,</span><br><span class="line">      goToFirstRow: () =&gt; true,</span><br><span class="line">      close: () =&gt; &#123;&#125;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    callback.onResult(resultSet);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p> 在 module.json5 注册扩展能力<br> <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;extensionAbilities&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;name&quot;: &quot;CustomDataShare&quot;,</span><br><span class="line">      &quot;srcEntry&quot;: &quot;./ets/CustomDataShare.ets&quot;,</span><br><span class="line">      &quot;type&quot;: &quot;dataShare&quot;,</span><br><span class="line">      &quot;uri&quot;: &quot;datashareproxy://com.example.provider&quot; </span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>SDK侧</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">async queryCustomField() &#123;</span><br><span class="line">    try &#123;</span><br><span class="line">      let context = featureAbility.getContext();</span><br><span class="line">      let helper = await dataShare.createDataShareHelper(</span><br><span class="line">        context,</span><br><span class="line">        &quot;datashareproxy://com.example.provider&quot;</span><br><span class="line">      );</span><br><span class="line">      </span><br><span class="line">      let resultSet = await helper.query(</span><br><span class="line">        &#123; uri: &quot;datashareproxy://com.example.provider/customField&quot; &#125;,</span><br><span class="line">        [&quot;customField&quot;],</span><br><span class="line">        null</span><br><span class="line">      );</span><br><span class="line"></span><br><span class="line">      if (resultSet.goToFirstRow()) &#123;</span><br><span class="line">        this.message = resultSet.getString(0);</span><br><span class="line">      &#125;</span><br><span class="line">      resultSet.close();</span><br><span class="line">    &#125; catch (err) &#123;</span><br><span class="line">      hilog.error(0x0000, TAG, &quot;query error: &quot; + JSON.stringify(err));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
 
+<p><strong>问题</strong></p>
+<p>使用DataShareExtensionAbility实现数据共享：目前仅对系统应用开放，暂不具体展开提供相关内容和指导。<br><a href="https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/data-share-overview">https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/data-share-overview</a></p>
+<h3 id="canOpenLink-判断应用是否可访问"><a href="#canOpenLink-判断应用是否可访问" class="headerlink" title="canOpenLink 判断应用是否可访问"></a>canOpenLink 判断应用是否可访问</h3><p><strong>实现</strong></p>
+<p>参考文档：<a href="https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/canopenlink">https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/canopenlink</a></p>
+<p>调用方（SDK）：</p>
+<ol>
+<li>在 entry 模块的 module.json5 文件中配置 querySchemes 属性，声明想要查询的 URL scheme。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;module&quot;: &#123;</span><br><span class="line">    //...</span><br><span class="line">    &quot;querySchemes&quot;: [</span><br><span class="line">      &quot;app1Scheme&quot;</span><br><span class="line">    ]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>调用 canOpenLink 接口：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import &#123; bundleManager &#125; from &#x27;@kit.AbilityKit&#x27;;</span><br><span class="line">import &#123; BusinessError &#125; from &#x27;@kit.BasicServicesKit&#x27;;</span><br><span class="line">import &#123; hilog &#125; from &#x27;@kit.PerformanceAnalysisKit&#x27;;</span><br><span class="line">try &#123;</span><br><span class="line">  let link = &#x27;app1Scheme://test.example.com/home&#x27;;</span><br><span class="line">  let canOpen = bundleManager.canOpenLink(link);</span><br><span class="line">  hilog.info(0x0000, &#x27;testTag&#x27;, &#x27;canOpenLink successfully: %&#123;public&#125;s&#x27;, JSON.stringify(canOpen));</span><br><span class="line">&#125; catch (err) &#123;</span><br><span class="line">  let message = (err as BusinessError).message;</span><br><span class="line">  hilog.error(0x0000, &#x27;testTag&#x27;, &#x27;canOpenLink failed: %&#123;public&#125;s&#x27;, message);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>目标方：<br>在 module.json5 文件中配置 uris 属性。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;module&quot;: &#123;</span><br><span class="line">    //...</span><br><span class="line">    &quot;abilities&quot;: [</span><br><span class="line">      &#123;</span><br><span class="line">        //...</span><br><span class="line">        &quot;skills&quot;: [</span><br><span class="line">          &#123;</span><br><span class="line">            // actions不能为空，actions为空会造成目标方匹配失败</span><br><span class="line">            &quot;actions&quot;: [&quot;ohos.want.action.home&quot;],</span><br><span class="line">            &quot;uris&quot;: [</span><br><span class="line">              &#123;</span><br><span class="line">                &quot;scheme&quot;: &quot;app1Scheme&quot;,</span><br><span class="line">                &quot;host&quot;: &quot;test.example.com&quot;,</span><br><span class="line">                &quot;pathStartWith&quot;: &quot;home&quot;</span><br><span class="line">              &#125;</span><br><span class="line">            ]</span><br><span class="line">          &#125;</span><br><span class="line">        ]</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">  &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题</strong></p>
+<p>querySchemes 中最多允许配置 50 个 URL scheme。因此限制不能无限使用新的 schema 头，但整体方案是可行的。</p>
+]]></content>
+      <tags>
+        <tag>鸿蒙</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>队列同步器</title>
+    <url>/2019/05/15/%E9%98%9F%E5%88%97%E5%90%8C%E6%AD%A5%E5%99%A8/</url>
+    <content><![CDATA[<h2 id="队列同步器"><a href="#队列同步器" class="headerlink" title="队列同步器"></a>队列同步器</h2><p>队列同步器AbstractQueuedSynchronizer（以下简称同步器），是用来构建锁或者其他同步组<br>件的基础框架，它使用了一个int成员变量表示同步状态，通过内置的FIFO队列来完成资源获<br>取线程的排队工作。</p>
+<p>同步器的主要使用方式是<strong>继承</strong>，子类通过继承同步器并实现它的抽象方法来管理同步状<br>态，在抽象方法的实现过程中免不了要对同步状态进行更改，这时就需要使用同步器提供的3<br>个方法（getState()、setState(int newState)和compareAndSetState(int expect,int update)）来进行操<br>作，因为它们能够保证状态的改变是安全的。子类推荐被定义为自定义同步组件的静态内部<br>类，同步器自身没有实现任何同步接口，它仅仅是定义了若干同步状态获取和释放的方法来<br>供自定义同步组件使用，同步器既可以支持独占式地获取同步状态，也可以支持共享式地获<br>取同步状态，这样就可以方便实现不同类型的同步组件（ReentrantLock、<br>ReentrantReadWriteLock和CountDownLatch等）。</p>
+<h2 id="队列同步器的接口与示例"><a href="#队列同步器的接口与示例" class="headerlink" title="队列同步器的接口与示例"></a>队列同步器的接口与示例</h2><p>同步器的设计是基于模板方法模式的，也就是说，使用者需要继承同步器并重写指定的<br>方法，随后将同步器组合在自定义同步组件的实现中，并调用同步器提供的模板方法，而这些<br>模板方法将会调用使用者重写的方法。</p>
+<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20181123105140.png"></p>
+<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20181123105200.png"></p>
+<p>以下是重写同步器方法实现的一个独占锁。</p>
+<pre><code>class Mutex implements Lock &#123;
+
+    // 静态内部类，自定义同步器
+    private static class Sync extends AbstractQueuedSynchronizer &#123;
+            // 是否处于占用状态
+            protected boolean isHeldExclusively() &#123;
+                return getState() == 1;
+            &#125; 
+
+            // 当状态为0的时候获取锁
+            public boolean tryAcquire(int acquires) &#123;
+                if (compareAndSetState(0, 1)) &#123;
+                    setExclusiveOwnerThread(Thread.currentThread());
+                    return true;
+                &#125;
+                return false;
+            &#125; 
+            // 释放锁，将状态设置为0
+            protected boolean tryRelease(int releases) &#123;
+                if (getState() == 0) throw new  IllegalMonitorStateException();
+                setExclusiveOwnerThread(null);
+                setState(0);
+                return true;
+            &#125; 
+
+            // 返回一个Condition，每个condition都包含了一个condition队列
+            Condition newCondition() &#123; return new ConditionObject(); &#125;
+    &#125; 
+
+    // 仅需要将操作代理到Sync上即可
+    private final Sync sync = new Sync();
+    public void lock() &#123; sync.acquire(1); &#125;
+    public boolean tryLock() &#123; return sync.tryAcquire(1); &#125;
+    public void unlock() &#123; sync.release(1); &#125;
+    public Condition newCondition() &#123; return sync.newCondition(); &#125;
+    public boolean isLocked() &#123; return sync.isHeldExclusively(); &#125;
+    public boolean hasQueuedThreads() &#123; return sync.hasQueuedThreads(); &#125;
+    public void lockInterruptibly() throws InterruptedException &#123;
+        sync.acquireInterruptibly(1);
+    &#125; 
+    public boolean tryLock(long timeout, TimeUnit unit) throws InterruptedException &#123;
+        return sync.tryAcquireNanos(1, unit.toNanos(timeout));
+    &#125;
 &#125;
 </code></pre>
-<p>通过设置组件扫描可以不用显示配置bean。但是组件扫描默认是不启用的。所以要通过配置来启用。</p>
-<ul>
-<li><p>在java配置类中开启组件扫描@ComponentScan</p>
-<pre><code>  @Configuration
-  @ComponentScan
-  public class CDPlayerConfig &#123; 
-  &#125;
-</code></pre>
-</li>
-</ul>
-<p>因为@ComponentScan会扫描与配置类相同的包。可以通过下面两个配置来设置扫描的包：</p>
-<blockquote>
-<ul>
-<li>@ComponentScan(basePackages&#x3D;{“soundsystem,”sdd”})<blockquote>
-<p>扫描包的名字</p>
-</blockquote>
-</li>
-</ul>
-</blockquote>
-<blockquote>
-<ul>
-<li>@ComponentScan(basePackageClasses&#x3D;{CDplayer.class,DVDPlayer.class})<blockquote>
-<p>扫描类所在的包</p>
-</blockquote>
-</li>
-</ul>
-</blockquote>
-<ul>
-<li><p>在XML中开启组件扫描</p>
-<pre><code>  &lt;context:component-scan base-package=&quot;soundsystem&quot; /&gt;
-</code></pre>
-</li>
-<li><p>为组件扫描的bean命名</p>
-<blockquote>
-<ul>
-<li>通过@Component注解</li>
-</ul>
-</blockquote>
-<p>  @Component(“sgtPerr”)<br>  public class SgtPeppers implements CompactDisc {</p>
-<pre><code>private String title = &quot;Sgt. Pepper&#39;s Lonely Hearts Club Band&quot;;  
-private String artist = &quot;The Beatles&quot;;
-
-public void play() &#123;
-  System.out.println(&quot;Playing &quot; + title + &quot; by &quot; + artist);
+<h2 id="队列同步器的实现分析"><a href="#队列同步器的实现分析" class="headerlink" title="队列同步器的实现分析"></a>队列同步器的实现分析</h2><h3 id="同步队列"><a href="#同步队列" class="headerlink" title="同步队列"></a>同步队列</h3><p>同步器依赖内部的同步队列（一个FIFO双向队列）来完成同步状态的管理，当前线程获取<br>同步状态失败时，同步器会将当前线程以及等待状态等信息构造成为一个节点（Node）并将其<br>加入同步队列，同时会阻塞当前线程，当同步状态释放时，会把首节点中的线程唤醒，使其再<br>次尝试获取同步状态。</p>
+<p>节点是构成同步队列的基础。<br><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614200946.png"></p>
+<p>同步器拥有首节点（head）<br>和尾节点（tail），没有成功获取同步状态的线程将会成为节点加入该队列的尾部，同步队列的<br>基本结构如图示。</p>
+<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614201218.png"></p>
+<p><em>同步队列在加入尾结点需要cas来保证线程安全，而设置头结点不需要。</em></p>
+<h3 id="独占式同步状态获取与释放"><a href="#独占式同步状态获取与释放" class="headerlink" title="独占式同步状态获取与释放"></a>独占式同步状态获取与释放</h3><p>主要流程为：</p>
+<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614201543.png"></p>
+<p>通过调用同步器的acquire(int arg)方法可以获取同步状态，该方法对中断不敏感，也就是<br>由于线程获取同步状态失败后进入同步队列中，后续对线程进行中断操作时，线程不会从同<br>步队列中移出。</p>
+<pre><code>//同步器的acquire方法
+public final void acquire(int arg) &#123;
+    if (!tryAcquire(arg) &amp;&amp;
+    acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+    selfInterrupt();
 &#125;
 </code></pre>
-<p>  }</p>
-</li>
-</ul>
-<blockquote>
-<ul>
-<li>通过@Named注解</li>
-</ul>
-</blockquote>
-<pre><code>@Named(&quot;sgtPerr&quot;)
-public class SgtPeppers implements CompactDisc &#123;
-
+<p>代码主要完成了同步状态获取、节点构造、加入同步队列以及在同步队列中自旋等<br>待的相关工作，其主要逻辑是：首先调用自定义同步器实现的tryAcquire(int arg)方法，该方法<br>保证线程安全的获取同步状态，如果同步状态获取失败，则构造同步节点（独占式<br>Node.EXCLUSIVE，同一时刻只能有一个线程成功获取同步状态）并通过addWaiter(Node node)<br>方法将该节点加入到同步队列的尾部，最后调用acquireQueued(Node node,int arg)方法，使得该<br>节点以“死循环”的方式获取同步状态。如果获取不到则阻塞节点中的线程，而被阻塞线程的<br>唤醒主要依靠前驱节点的出队或阻塞线程被中断来实现。</p>
+<pre><code>//同步器的addWaiter和enq方法
+private Node addWaiter(Node mode) &#123;
+    Node node = new Node(Thread.currentThread(), mode);
+    // 快速尝试在尾部添加
+    Node pred = tail;if (pred != null) &#123;
+        node.prev = pred;
+        if (compareAndSetTail(pred, node)) &#123;
+            pred.next = node;
+            return node;
+        &#125;
+    &#125;
+    enq(node);
+    return node;
+&#125;
+private Node enq(final Node node) &#123;
+    for (;;) &#123;
+        Node t = tail;
+        if (t == null) &#123; // Must initialize
+            if (compareAndSetHead(new Node()))
+            tail = head;
+        &#125; else &#123;
+            node.prev = t;
+            if (compareAndSetTail(t, node)) &#123;
+            t.next = node;
+            return t;
+            &#125;
+        &#125;
+    &#125;
 &#125;
 </code></pre>
-<h3 id="2-JAVA代码装配Bean"><a href="#2-JAVA代码装配Bean" class="headerlink" title="2- JAVA代码装配Bean"></a>2- JAVA代码装配Bean</h3><p>通过配置类来实现装配Bean</p>
-<pre><code>@Configuration //表明这是一个配置类
-public class CDPlayerConfig &#123;
-  
-  @Bean //声明这是一个bean
-  public CompactDisc compactDisc() &#123;
-    return new SgtPeppers();
-  &#125;
-
-  @Bean
-    //通过构造器注入
-  public CDPlayer cdPlayer(CompactDisc compactDisc) &#123;
-    return new CDPlayer(compactDisc);
-  &#125;
-
-  @Bean 
-    //通过setter方法注入
-  public CDPlayer cdPlayer(CompactDisc compactDisc) &#123;
-    CDPlayer cdPlayer = new CDPlayer(compactDisc);
-    cdPlayer.setCompactDisc(compactDisc);
-    return cdPlayer
-  &#125;
-
+<p>当前线程获取同步状态并执行了相应逻辑之后，就需要释放同步状态，使得后续节点能<br>够继续获取同步状态。通过调用同步器的release(int arg)方法可以释放同步状态，该方法在释<br>放了同步状态之后，会唤醒其后继节点（进而使后继节点重新尝试获取同步状态）。</p>
+<pre><code>public final boolean release(int arg) &#123;
+    if (tryRelease(arg)) &#123;
+        Node h = head;
+        if (h != null &amp;&amp; h.waitStatus != 0)
+            unparkSuccessor(h);
+        return true;
+    &#125;
+    return false;
 &#125;
 </code></pre>
-<h3 id="3-通过XML装配bean"><a href="#3-通过XML装配bean" class="headerlink" title="3- 通过XML装配bean"></a>3- 通过XML装配bean</h3><blockquote>
-<ul>
-<li>通过构造器注入</li>
-</ul>
-</blockquote>
-<pre><code>&lt;bean id=&quot;compactDisc&quot; class=&quot;soundsystem.collections.BlankDisc&quot;&gt;
-    &lt;constructor-arg value=&quot;Sgt. Pepper&#39;s Lonely Hearts Club Band&quot; /&gt;
-    &lt;constructor-arg value=&quot;The Beatles&quot; /&gt;
-    &lt;constructor-arg&gt;
-      &lt;list&gt;
-        &lt;value&gt;Sgt. Pepper&#39;s Lonely Hearts Club Band&lt;/value&gt;
-        &lt;value&gt;With a Little Help from My Friends&lt;/value&gt;
-        &lt;value&gt;Lucy in the Sky with Diamonds&lt;/value&gt;
-        &lt;value&gt;Getting Better&lt;/value&gt;
-        &lt;value&gt;Fixing a Hole&lt;/value&gt;
-        &lt;value&gt;She&#39;s Leaving Home&lt;/value&gt;
-        &lt;value&gt;Being for the Benefit of Mr. Kite!&lt;/value&gt;
-        &lt;value&gt;Within You Without You&lt;/value&gt;
-        &lt;value&gt;When I&#39;m Sixty-Four&lt;/value&gt;
-        &lt;value&gt;Lovely Rita&lt;/value&gt;
-        &lt;value&gt;Good Morning Good Morning&lt;/value&gt;
-        &lt;value&gt;Sgt. Pepper&#39;s Lonely Hearts Club Band (Reprise)&lt;/value&gt;
-        &lt;value&gt;A Day in the Life&lt;/value&gt;
-      &lt;/list&gt;
-    &lt;/constructor-arg&gt;
-  &lt;/bean&gt;
+<p>总结：在获取同步状态时，同步器维<br>护一个同步队列，获取状态失败的线程都会被加入到队列中并在队列中进行自旋；移出队列<br>（或停止自旋）的条件是前驱节点为头节点且成功获取了同步状态。在释放同步状态时，同步<br>器调用tryRelease(int arg)方法释放同步状态，然后唤醒头节点的后继节点。</p>
+<h3 id="共享式同步状态获取与释放"><a href="#共享式同步状态获取与释放" class="headerlink" title="共享式同步状态获取与释放"></a>共享式同步状态获取与释放</h3><p>共享式获取与独占式获取最主要的区别在于同一时刻能否有多个线程同时获取到同步状<br>态。</p>
+<p>通过调用同步器的acquireShared(int arg)方法可以共享式地获取同步状态。</p>
+<pre><code>public final void acquireShared(int arg) &#123;
+    if (tryAcquireShared(arg) &lt; 0)
+        doAcquireShared(arg);
+    &#125;
+private void doAcquireShared(int arg) &#123;
+    final Node node = addWaiter(Node.SHARED);
+    boolean failed = true;
+    try &#123;
+        boolean interrupted = false;
+        for (;;) &#123;
+            final Node p = node.predecessor();
+            if (p == head) &#123;
+                int r = tryAcquireShared(arg);
+                if (r &gt;= 0) &#123;
+                    setHeadAndPropagate(node, r);
+                    p.next = null;
+                    if (interrupted)selfInterrupt();
+                    failed = false;
+                    return;
+                &#125;
+            &#125;
+            if (shouldParkAfterFailedAcquire(p, node) &amp;&amp;parkAndCheckInterrupt())
+                interrupted = true;
+        &#125;
+    &#125; finally &#123;
+        if (failed) cancelAcquire(node);
+    &#125;
+&#125;
 </code></pre>
-<blockquote>
-<ul>
-<li>通过setter注入</li>
-</ul>
-</blockquote>
-<pre><code> &lt;bean id=&quot;compactDisc&quot;
-    class=&quot;soundsystem.properties.BlankDisc&quot;&gt;
-    &lt;property name=&quot;title&quot; value=&quot;Sgt. Pepper&#39;s Lonely Hearts Club Band&quot; /&gt;
-    &lt;property name=&quot;artist&quot; value=&quot;The Beatles&quot; /&gt;
-    &lt;property name=&quot;tracks&quot;&gt;
-      &lt;list&gt;
-        &lt;value&gt;Sgt. Pepper&#39;s Lonely Hearts Club Band&lt;/value&gt;
-        &lt;value&gt;With a Little Help from My Friends&lt;/value&gt;
-        &lt;value&gt;Lucy in the Sky with Diamonds&lt;/value&gt;
-        &lt;value&gt;Getting Better&lt;/value&gt;
-        &lt;value&gt;Fixing a Hole&lt;/value&gt;
-        &lt;value&gt;She&#39;s Leaving Home&lt;/value&gt;
-        &lt;value&gt;Being for the Benefit of Mr. Kite!&lt;/value&gt;
-        &lt;value&gt;Within You Without You&lt;/value&gt;
-        &lt;value&gt;When I&#39;m Sixty-Four&lt;/value&gt;
-        &lt;value&gt;Lovely Rita&lt;/value&gt;
-        &lt;value&gt;Good Morning Good Morning&lt;/value&gt;
-        &lt;value&gt;Sgt. Pepper&#39;s Lonely Hearts Club Band (Reprise)&lt;/value&gt;
-        &lt;value&gt;A Day in the Life&lt;/value&gt;
-      &lt;/list&gt;
-    &lt;/property&gt;
-  &lt;/bean&gt;
+<p>在acquireShared(int arg)方法中，同步器调用tryAcquireShared(int arg)方法尝试获取同步状<br>态，tryAcquireShared(int arg)方法返回值为int类型，当返回值大于等于0时，表示能够获取到同<br>步状态。因此，在共享式获取的自旋过程中，成功获取到同步状态并退出自旋的条件就是<br>tryAcquireShared(int arg)方法返回值大于等于0。可以看到，在doAcquireShared(int arg)方法的自<br>旋过程中，如果当前节点的前驱为头节点时，尝试获取同步状态，如果返回值大于等于0，表示<br>该次获取同步状态成功并从自旋过程中退出。</p>
+<p>与独占式一样，共享式获取也需要释放同步状态，通过调用releaseShared(int arg)方法可以<br>释放同步状态。方法在释放同步状态之后，将会唤醒后续处于等待状态的节点。对于能够支持多个线<br>程同时访问的并发组件（比如Semaphore），它和独占式主要区别在于tryReleaseShared(int arg)<br>方法必须确保同步状态（或者资源数）线程安全释放，一般是通过循环和CAS来保证的，因为<br>释放同步状态的操作会同时来自多个线程。</p>
+<pre><code>public final boolean releaseShared(int arg) &#123;
+    if (tryReleaseShared(arg)) &#123;
+        doReleaseShared();
+        return true;
+    &#125;
+    return false;
+&#125;
 </code></pre>
-<h3 id="4-混合配置"><a href="#4-混合配置" class="headerlink" title="4-混合配置"></a>4-混合配置</h3><ul>
-<li><p>在javaConfig引用xml配置</p>
-<pre><code>  @Configuration
-  @Import(CDPlayerConfig.class) //导入其他的java配置
-  @ImportResource(&quot;classpath:cd-config.xml&quot;) // 导入xml配置
-  public class SoundSystemConfig &#123;
-  
-  &#125;
+<h3 id="独占式超时获取同步状态"><a href="#独占式超时获取同步状态" class="headerlink" title="独占式超时获取同步状态"></a>独占式超时获取同步状态</h3><p>通过调用同步器的doAcquireNanos(int arg,long nanosTimeout)方法可以超时获取同步状<br>态，即在指定的时间段内获取同步状态，如果获取到同步状态则返回true，否则，返回false。该<br>方法提供了传统Java同步操作（比如synchronized关键字）所不具备的特性。</p>
+<p>超时获取同步状态过程可以被视作响应中断获取同步状态过程的“增强版”，<br>doAcquireNanos(int arg,long nanosTimeout)方法在支持响应中断的基础上，增加了超时获取的<br>特性。针对超时获取，主要需要计算出需要睡眠的时间间隔nanosTimeout，为了防止过早通知，<br>nanosTimeout计算公式为：nanosTimeout-&#x3D;now-lastTime，其中now为当前唤醒时间，lastTime为上<br>次唤醒时间，如果nanosTimeout大于0则表示超时时间未到，需要继续睡眠nanosTimeout纳秒，<br>反之，表示已经超时。</p>
+<pre><code>private boolean doAcquireNanos(int arg, long nanosTimeout)throws InterruptedException &#123;
+    long lastTime = System.nanoTime();
+    final Node node = addWaiter(Node.EXCLUSIVE);
+    boolean failed = true;
+    try &#123;
+        for (;;) &#123;
+            final Node p = node.predecessor();
+            if (p == head &amp;&amp; tryAcquire(arg)) &#123;
+                setHead(node);
+                p.next = null; // help GC
+                failed = false;
+                return true;
+            &#125;
+            if (nanosTimeout &lt;= 0) return false;
+            if (shouldParkAfterFailedAcquire(p, node) &amp;&amp; nanosTimeout &gt; spinForTimeoutThreshold)
+                LockSupport.parkNanos(this, nanosTimeout);
+            long now = System.nanoTime();
+            //计算时间，当前时间now减去睡眠之前的时间lastTime得到已经睡眠
+            //的时间delta，然后被原有超时时间nanosTimeout减去，得到了
+            //还应该睡眠的时间
+            nanosTimeout -= now - lastTime;
+            lastTime = now;
+            if (Thread.interrupted())
+                throw new InterruptedException();
+        &#125;
+    &#125; finally &#123;
+        if (failed) cancelAcquire(node);
+    &#125;
+&#125;
 </code></pre>
-</li>
-<li><p>在xml配置中引用javaconfig</p>
-<pre><code>  &lt;bean class=&quot;soundsystem.CDConfig&quot; /&gt; 导入config配置类
-  &lt;import resource=&quot;cd-player-config.xml&quot;/&gt; 导入xml配置
-</code></pre>
-</li>
-</ul>
+<p>该方法在自旋过程中，当节点的前驱节点为头节点时尝试获取同步状态，如果获取成功<br>则从该方法返回，这个过程和独占式同步获取的过程类似，但是在同步状态获取失败的处理<br>上有所不同。如果当前线程获取同步状态失败，则判断是否超时（nanosTimeout小于等于0表示<br>已经超时），如果没有超时，重新计算超时间隔nanosTimeout，然后使当前线程等待<br>nanosTimeout纳秒（当已到设置的超时时间，该线程会从LockSupport.parkNanos(Object<br>blocker,long nanos)方法返回）。</p>
+<p>如果nanosTimeout小于等于spinForTimeoutThreshold（1000纳秒）时，将不会使该线程进行<br>超时等待，而是进入快速的自旋过程。原因在于，非常短的超时等待无法做到十分精确，如果<br>这时再进行超时等待，相反会让nanosTimeout的超时从整体上表现得反而不精确。因此，在超<br>时非常短的场景下，同步器会进入无条件的快速自旋。</p>
+<p>独占式超时获取同步态的流程如图5所示。</p>
+<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614203038.png"></p>
 <hr>
-<p>##高级装配</p>
-<h3 id="1-环境与profile"><a href="#1-环境与profile" class="headerlink" title="1- 环境与profile"></a>1- 环境与profile</h3>]]></content>
+<blockquote>
+<p>全文来自 Java并发编程的艺术  </p>
+</blockquote>
+]]></content>
       <categories>
         <category>java</category>
       </categories>
       <tags>
-        <tag>spring</tag>
-        <tag>java</tag>
+        <tag>java多线程</tag>
+        <tag>队列同步器</tag>
+        <tag>lock</tag>
+        <tag>AQS</tag>
       </tags>
   </entry>
   <entry>
@@ -5605,340 +5939,6 @@ public class HttpUtil &#123;
       </categories>
       <tags>
         <tag>Android</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>秒杀系统的优化</title>
-    <url>/2019/06/01/%E7%A7%92%E6%9D%80%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BC%98%E5%8C%96/</url>
-    <content><![CDATA[<hr>
-<h2 id="秒杀系统简介"><a href="#秒杀系统简介" class="headerlink" title="秒杀系统简介"></a>秒杀系统简介</h2><p>秒杀场景一般会在电商网站举行一些活动或者节假日在12306网站上抢票时遇到。对于电商网站中一些稀缺或者特价商品，电商网站一般会在约定时间点对其进行限量销售，因为这些商品的特殊性，会吸引大量用户前来抢购，并且会在约定的时间点同时在秒杀页面进行抢购。</p>
-<p>秒杀系统主要面临三大问题：
-    </p>
-<p>一、瞬时的高并发访问。抢购和普通的电商销售有所不同，普通的电商销售，流量是比较平均的，虽然有波峰波谷，但不会特别突出。而抢购是在特定时间点进行的推销活动，抢购开始前，用户不断刷新页面，以获得购买按钮；抢购开始的一瞬间，集中并发购买。 
-   </p>
-<p>二、数据正确性。抢购毕竟是一种购买行为，需要购买、扣减库存、支付等复杂的流程，在此过程中，要保证数据的正确性，防止超卖（卖出量超过库存）的发生。 
-   </p>
-<p>三、防作弊。</p>
-<h2 id="秒杀系统的设计理念"><a href="#秒杀系统的设计理念" class="headerlink" title="秒杀系统的设计理念"></a>秒杀系统的设计理念</h2><p>秒杀系统的优化或者设计理念为以下几点：</p>
-<p>限流： 鉴于只有少部分用户能够秒杀成功，所以要限制大部分流量，只允许少部分流量进入服务后端。</p>
-<p>削峰：对于秒杀系统瞬时会有大量用户涌入，所以在抢购一开始会有很高的瞬间峰值。高峰值流量是压垮系统很重要的原因，所以如何把瞬间的高流量变成一段时间平稳的流量也是设计秒杀系统很重要的思路。实现削峰的常用的方法有利用缓存和消息中间件等技术。</p>
-<p>异步处理：秒杀系统是一个高并发系统，采用异步处理模式可以极大地提高系统并发量，其实异步处理就是削峰的一种实现方式。</p>
-<p>内存缓存：秒杀系统最大的瓶颈一般都是数据库读写，由于数据库读写属于磁盘IO，性能很低，如果能够把部分数据或业务逻辑转移到内存缓存，效率会有极大地提升。</p>
-<p>可拓展：当然如果我们想支持更多用户，更大的并发，最好就将系统设计成弹性可拓展的，如果流量来了，拓展机器就好了。像淘宝、京东等双十一活动时会增加大量机器应对交易高峰。</p>
-<h3 id="前端方案"><a href="#前端方案" class="headerlink" title="前端方案"></a>前端方案</h3><p><strong>页面静态化：</strong> 将页面上的所有静态元素全部静态化，将其交给ngix管理，以此同时采用cdn来N来抗峰值；对于动态部分采用Ajex请求动态加载数据</p>
-<p><strong>静态资源优化：</strong>主要是讲多个css&#x2F;js请求合并为一个等。</p>
-<p><strong>秒杀接口隐藏：</strong>在秒杀开始前一段时间才暴露出秒杀的接口（路径），同时在后端可以通过与用户id绑定生成每个用户的秒杀路径，保存在redis中，在固定时间中只允许固定的次数请求，过多的请求被拦截。这样防止使用脚本等进行大批量的请求。</p>
-<p><strong>验证码：</strong>主要是为了流量削峰与筛除简单脚本。通过用户输入验证码的时间，将在某一时间的突发流量均摊到随后的一段时间，还能筛除掉一部分简单的无法识别验证码的脚本。</p>
-<h3 id="后端方案"><a href="#后端方案" class="headerlink" title="后端方案"></a>后端方案</h3><p><strong>用户限流：</strong>通过对用户id绑定生成的秒杀路径，限定访问次数</p>
-<p><strong>redis缓存：</strong> 将数据库内容比如秒杀商品内容详情缓存到redis，不访问数据库</p>
-<p><strong>消息队列：</strong> 通过将请求缓存到消息队列，异步执行来削减同一时间到来的请求。</p>
-<p><strong>CDN：</strong>内容分发网络。其基本思路是尽可能避开互联网上有可能影响数据传输速度和稳定性的瓶颈和环节，使内容传输的更快、更稳定。简单的来说，就是把原服务器上数据复制到其他服务器上，用户访问时，那台服务器近访问到的就是那台服务器上的数据。CDN的劣势是内容的变更生效慢，所以仅适用于“几乎不变”的资源，例如引用的js包，图片等。</p>
-<h2 id="秒杀系统的具体实现"><a href="#秒杀系统的具体实现" class="headerlink" title="秒杀系统的具体实现"></a>秒杀系统的具体实现</h2><p><em>秒杀开始前：</em></p>
-<p>只能看到看到秒杀商品详情，无法进入秒杀接口，直到秒杀开始前一段时间。</p>
-<p>对进入秒杀商品详情页的用户将其uid与秒杀商品gid结合，生成该用户对该秒杀商品的秒杀接口路径，将其保存到redis中。</p>
-<p>在秒杀商品详情页页面采用js脚本来实现倒计时与限制秒杀按钮的电机。</p>
-<p><em>秒杀开始时：</em></p>
-<p>服务端使用redis提前缓存秒杀商品详情，主要参数为库存数量。</p>
-<p>使用redis来实现秒杀商品的预减，不直接访问数据库。当redis中的商品库存少于0，拒绝请求。这样能保证只有少量的请求能够接近数据库。</p>
-<p>将抢到预减的请求放入到消息队列中，将同步转为异步执行，实现流量的再次削峰。</p>
-<p>服务层从消息队列中拿出请求，进行数据库操作，实现真正的商品抢购事务，生成订单；若事务失败，回滚事务，告知用户抢购失败。若事务成功，请求用户确认订单详情，并支付。</p>
-<p><strong>注意事项：</strong></p>
-<p>防止买超： 需要对数据库字段进行设计，添加索引；在服务端需要对库存字段进行限制，保证不为负。</p>
-<p>消息队列： 也可以使用redis来充当消息队列。</p>
-<p>用户限流： 限制用户一段时间内能点击的次数</p>
-<p>IP限流： 方法太过于粗暴，容易误封无辜用户，不推荐。</p>
-]]></content>
-      <categories>
-        <category>java</category>
-        <category>高并发</category>
-      </categories>
-      <tags>
-        <tag>java</tag>
-        <tag>高并发</tag>
-        <tag>秒杀系统</tag>
-        <tag>reids</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>队列同步器</title>
-    <url>/2019/05/15/%E9%98%9F%E5%88%97%E5%90%8C%E6%AD%A5%E5%99%A8/</url>
-    <content><![CDATA[<h2 id="队列同步器"><a href="#队列同步器" class="headerlink" title="队列同步器"></a>队列同步器</h2><p>队列同步器AbstractQueuedSynchronizer（以下简称同步器），是用来构建锁或者其他同步组<br>件的基础框架，它使用了一个int成员变量表示同步状态，通过内置的FIFO队列来完成资源获<br>取线程的排队工作。</p>
-<p>同步器的主要使用方式是<strong>继承</strong>，子类通过继承同步器并实现它的抽象方法来管理同步状<br>态，在抽象方法的实现过程中免不了要对同步状态进行更改，这时就需要使用同步器提供的3<br>个方法（getState()、setState(int newState)和compareAndSetState(int expect,int update)）来进行操<br>作，因为它们能够保证状态的改变是安全的。子类推荐被定义为自定义同步组件的静态内部<br>类，同步器自身没有实现任何同步接口，它仅仅是定义了若干同步状态获取和释放的方法来<br>供自定义同步组件使用，同步器既可以支持独占式地获取同步状态，也可以支持共享式地获<br>取同步状态，这样就可以方便实现不同类型的同步组件（ReentrantLock、<br>ReentrantReadWriteLock和CountDownLatch等）。</p>
-<h2 id="队列同步器的接口与示例"><a href="#队列同步器的接口与示例" class="headerlink" title="队列同步器的接口与示例"></a>队列同步器的接口与示例</h2><p>同步器的设计是基于模板方法模式的，也就是说，使用者需要继承同步器并重写指定的<br>方法，随后将同步器组合在自定义同步组件的实现中，并调用同步器提供的模板方法，而这些<br>模板方法将会调用使用者重写的方法。</p>
-<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20181123105140.png"></p>
-<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20181123105200.png"></p>
-<p>以下是重写同步器方法实现的一个独占锁。</p>
-<pre><code>class Mutex implements Lock &#123;
-
-    // 静态内部类，自定义同步器
-    private static class Sync extends AbstractQueuedSynchronizer &#123;
-            // 是否处于占用状态
-            protected boolean isHeldExclusively() &#123;
-                return getState() == 1;
-            &#125; 
-
-            // 当状态为0的时候获取锁
-            public boolean tryAcquire(int acquires) &#123;
-                if (compareAndSetState(0, 1)) &#123;
-                    setExclusiveOwnerThread(Thread.currentThread());
-                    return true;
-                &#125;
-                return false;
-            &#125; 
-            // 释放锁，将状态设置为0
-            protected boolean tryRelease(int releases) &#123;
-                if (getState() == 0) throw new  IllegalMonitorStateException();
-                setExclusiveOwnerThread(null);
-                setState(0);
-                return true;
-            &#125; 
-
-            // 返回一个Condition，每个condition都包含了一个condition队列
-            Condition newCondition() &#123; return new ConditionObject(); &#125;
-    &#125; 
-
-    // 仅需要将操作代理到Sync上即可
-    private final Sync sync = new Sync();
-    public void lock() &#123; sync.acquire(1); &#125;
-    public boolean tryLock() &#123; return sync.tryAcquire(1); &#125;
-    public void unlock() &#123; sync.release(1); &#125;
-    public Condition newCondition() &#123; return sync.newCondition(); &#125;
-    public boolean isLocked() &#123; return sync.isHeldExclusively(); &#125;
-    public boolean hasQueuedThreads() &#123; return sync.hasQueuedThreads(); &#125;
-    public void lockInterruptibly() throws InterruptedException &#123;
-        sync.acquireInterruptibly(1);
-    &#125; 
-    public boolean tryLock(long timeout, TimeUnit unit) throws InterruptedException &#123;
-        return sync.tryAcquireNanos(1, unit.toNanos(timeout));
-    &#125;
-&#125;
-</code></pre>
-<h2 id="队列同步器的实现分析"><a href="#队列同步器的实现分析" class="headerlink" title="队列同步器的实现分析"></a>队列同步器的实现分析</h2><h3 id="同步队列"><a href="#同步队列" class="headerlink" title="同步队列"></a>同步队列</h3><p>同步器依赖内部的同步队列（一个FIFO双向队列）来完成同步状态的管理，当前线程获取<br>同步状态失败时，同步器会将当前线程以及等待状态等信息构造成为一个节点（Node）并将其<br>加入同步队列，同时会阻塞当前线程，当同步状态释放时，会把首节点中的线程唤醒，使其再<br>次尝试获取同步状态。</p>
-<p>节点是构成同步队列的基础。<br><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614200946.png"></p>
-<p>同步器拥有首节点（head）<br>和尾节点（tail），没有成功获取同步状态的线程将会成为节点加入该队列的尾部，同步队列的<br>基本结构如图示。</p>
-<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614201218.png"></p>
-<p><em>同步队列在加入尾结点需要cas来保证线程安全，而设置头结点不需要。</em></p>
-<h3 id="独占式同步状态获取与释放"><a href="#独占式同步状态获取与释放" class="headerlink" title="独占式同步状态获取与释放"></a>独占式同步状态获取与释放</h3><p>主要流程为：</p>
-<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614201543.png"></p>
-<p>通过调用同步器的acquire(int arg)方法可以获取同步状态，该方法对中断不敏感，也就是<br>由于线程获取同步状态失败后进入同步队列中，后续对线程进行中断操作时，线程不会从同<br>步队列中移出。</p>
-<pre><code>//同步器的acquire方法
-public final void acquire(int arg) &#123;
-    if (!tryAcquire(arg) &amp;&amp;
-    acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
-    selfInterrupt();
-&#125;
-</code></pre>
-<p>代码主要完成了同步状态获取、节点构造、加入同步队列以及在同步队列中自旋等<br>待的相关工作，其主要逻辑是：首先调用自定义同步器实现的tryAcquire(int arg)方法，该方法<br>保证线程安全的获取同步状态，如果同步状态获取失败，则构造同步节点（独占式<br>Node.EXCLUSIVE，同一时刻只能有一个线程成功获取同步状态）并通过addWaiter(Node node)<br>方法将该节点加入到同步队列的尾部，最后调用acquireQueued(Node node,int arg)方法，使得该<br>节点以“死循环”的方式获取同步状态。如果获取不到则阻塞节点中的线程，而被阻塞线程的<br>唤醒主要依靠前驱节点的出队或阻塞线程被中断来实现。</p>
-<pre><code>//同步器的addWaiter和enq方法
-private Node addWaiter(Node mode) &#123;
-    Node node = new Node(Thread.currentThread(), mode);
-    // 快速尝试在尾部添加
-    Node pred = tail;if (pred != null) &#123;
-        node.prev = pred;
-        if (compareAndSetTail(pred, node)) &#123;
-            pred.next = node;
-            return node;
-        &#125;
-    &#125;
-    enq(node);
-    return node;
-&#125;
-private Node enq(final Node node) &#123;
-    for (;;) &#123;
-        Node t = tail;
-        if (t == null) &#123; // Must initialize
-            if (compareAndSetHead(new Node()))
-            tail = head;
-        &#125; else &#123;
-            node.prev = t;
-            if (compareAndSetTail(t, node)) &#123;
-            t.next = node;
-            return t;
-            &#125;
-        &#125;
-    &#125;
-&#125;
-</code></pre>
-<p>当前线程获取同步状态并执行了相应逻辑之后，就需要释放同步状态，使得后续节点能<br>够继续获取同步状态。通过调用同步器的release(int arg)方法可以释放同步状态，该方法在释<br>放了同步状态之后，会唤醒其后继节点（进而使后继节点重新尝试获取同步状态）。</p>
-<pre><code>public final boolean release(int arg) &#123;
-    if (tryRelease(arg)) &#123;
-        Node h = head;
-        if (h != null &amp;&amp; h.waitStatus != 0)
-            unparkSuccessor(h);
-        return true;
-    &#125;
-    return false;
-&#125;
-</code></pre>
-<p>总结：在获取同步状态时，同步器维<br>护一个同步队列，获取状态失败的线程都会被加入到队列中并在队列中进行自旋；移出队列<br>（或停止自旋）的条件是前驱节点为头节点且成功获取了同步状态。在释放同步状态时，同步<br>器调用tryRelease(int arg)方法释放同步状态，然后唤醒头节点的后继节点。</p>
-<h3 id="共享式同步状态获取与释放"><a href="#共享式同步状态获取与释放" class="headerlink" title="共享式同步状态获取与释放"></a>共享式同步状态获取与释放</h3><p>共享式获取与独占式获取最主要的区别在于同一时刻能否有多个线程同时获取到同步状<br>态。</p>
-<p>通过调用同步器的acquireShared(int arg)方法可以共享式地获取同步状态。</p>
-<pre><code>public final void acquireShared(int arg) &#123;
-    if (tryAcquireShared(arg) &lt; 0)
-        doAcquireShared(arg);
-    &#125;
-private void doAcquireShared(int arg) &#123;
-    final Node node = addWaiter(Node.SHARED);
-    boolean failed = true;
-    try &#123;
-        boolean interrupted = false;
-        for (;;) &#123;
-            final Node p = node.predecessor();
-            if (p == head) &#123;
-                int r = tryAcquireShared(arg);
-                if (r &gt;= 0) &#123;
-                    setHeadAndPropagate(node, r);
-                    p.next = null;
-                    if (interrupted)selfInterrupt();
-                    failed = false;
-                    return;
-                &#125;
-            &#125;
-            if (shouldParkAfterFailedAcquire(p, node) &amp;&amp;parkAndCheckInterrupt())
-                interrupted = true;
-        &#125;
-    &#125; finally &#123;
-        if (failed) cancelAcquire(node);
-    &#125;
-&#125;
-</code></pre>
-<p>在acquireShared(int arg)方法中，同步器调用tryAcquireShared(int arg)方法尝试获取同步状<br>态，tryAcquireShared(int arg)方法返回值为int类型，当返回值大于等于0时，表示能够获取到同<br>步状态。因此，在共享式获取的自旋过程中，成功获取到同步状态并退出自旋的条件就是<br>tryAcquireShared(int arg)方法返回值大于等于0。可以看到，在doAcquireShared(int arg)方法的自<br>旋过程中，如果当前节点的前驱为头节点时，尝试获取同步状态，如果返回值大于等于0，表示<br>该次获取同步状态成功并从自旋过程中退出。</p>
-<p>与独占式一样，共享式获取也需要释放同步状态，通过调用releaseShared(int arg)方法可以<br>释放同步状态。方法在释放同步状态之后，将会唤醒后续处于等待状态的节点。对于能够支持多个线<br>程同时访问的并发组件（比如Semaphore），它和独占式主要区别在于tryReleaseShared(int arg)<br>方法必须确保同步状态（或者资源数）线程安全释放，一般是通过循环和CAS来保证的，因为<br>释放同步状态的操作会同时来自多个线程。</p>
-<pre><code>public final boolean releaseShared(int arg) &#123;
-    if (tryReleaseShared(arg)) &#123;
-        doReleaseShared();
-        return true;
-    &#125;
-    return false;
-&#125;
-</code></pre>
-<h3 id="独占式超时获取同步状态"><a href="#独占式超时获取同步状态" class="headerlink" title="独占式超时获取同步状态"></a>独占式超时获取同步状态</h3><p>通过调用同步器的doAcquireNanos(int arg,long nanosTimeout)方法可以超时获取同步状<br>态，即在指定的时间段内获取同步状态，如果获取到同步状态则返回true，否则，返回false。该<br>方法提供了传统Java同步操作（比如synchronized关键字）所不具备的特性。</p>
-<p>超时获取同步状态过程可以被视作响应中断获取同步状态过程的“增强版”，<br>doAcquireNanos(int arg,long nanosTimeout)方法在支持响应中断的基础上，增加了超时获取的<br>特性。针对超时获取，主要需要计算出需要睡眠的时间间隔nanosTimeout，为了防止过早通知，<br>nanosTimeout计算公式为：nanosTimeout-&#x3D;now-lastTime，其中now为当前唤醒时间，lastTime为上<br>次唤醒时间，如果nanosTimeout大于0则表示超时时间未到，需要继续睡眠nanosTimeout纳秒，<br>反之，表示已经超时。</p>
-<pre><code>private boolean doAcquireNanos(int arg, long nanosTimeout)throws InterruptedException &#123;
-    long lastTime = System.nanoTime();
-    final Node node = addWaiter(Node.EXCLUSIVE);
-    boolean failed = true;
-    try &#123;
-        for (;;) &#123;
-            final Node p = node.predecessor();
-            if (p == head &amp;&amp; tryAcquire(arg)) &#123;
-                setHead(node);
-                p.next = null; // help GC
-                failed = false;
-                return true;
-            &#125;
-            if (nanosTimeout &lt;= 0) return false;
-            if (shouldParkAfterFailedAcquire(p, node) &amp;&amp; nanosTimeout &gt; spinForTimeoutThreshold)
-                LockSupport.parkNanos(this, nanosTimeout);
-            long now = System.nanoTime();
-            //计算时间，当前时间now减去睡眠之前的时间lastTime得到已经睡眠
-            //的时间delta，然后被原有超时时间nanosTimeout减去，得到了
-            //还应该睡眠的时间
-            nanosTimeout -= now - lastTime;
-            lastTime = now;
-            if (Thread.interrupted())
-                throw new InterruptedException();
-        &#125;
-    &#125; finally &#123;
-        if (failed) cancelAcquire(node);
-    &#125;
-&#125;
-</code></pre>
-<p>该方法在自旋过程中，当节点的前驱节点为头节点时尝试获取同步状态，如果获取成功<br>则从该方法返回，这个过程和独占式同步获取的过程类似，但是在同步状态获取失败的处理<br>上有所不同。如果当前线程获取同步状态失败，则判断是否超时（nanosTimeout小于等于0表示<br>已经超时），如果没有超时，重新计算超时间隔nanosTimeout，然后使当前线程等待<br>nanosTimeout纳秒（当已到设置的超时时间，该线程会从LockSupport.parkNanos(Object<br>blocker,long nanos)方法返回）。</p>
-<p>如果nanosTimeout小于等于spinForTimeoutThreshold（1000纳秒）时，将不会使该线程进行<br>超时等待，而是进入快速的自旋过程。原因在于，非常短的超时等待无法做到十分精确，如果<br>这时再进行超时等待，相反会让nanosTimeout的超时从整体上表现得反而不精确。因此，在超<br>时非常短的场景下，同步器会进入无条件的快速自旋。</p>
-<p>独占式超时获取同步态的流程如图5所示。</p>
-<p><img src="https://raw.githubusercontent.com/BARKTEGH/MarkDownPhotos/master/multiThread/TIM%E6%88%AA%E5%9B%BE20190614203038.png"></p>
-<hr>
-<blockquote>
-<p>全文来自 Java并发编程的艺术  </p>
-</blockquote>
-]]></content>
-      <categories>
-        <category>java</category>
-      </categories>
-      <tags>
-        <tag>java多线程</tag>
-        <tag>队列同步器</tag>
-        <tag>lock</tag>
-        <tag>AQS</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>鸿蒙判断应用是否支持某能力</title>
-    <url>/2025/07/21/%E9%B8%BF%E8%92%99%E5%88%A4%E6%96%AD%E5%BA%94%E7%94%A8%E6%98%AF%E5%90%A6%E6%94%AF%E6%8C%81%E6%9F%90%E8%83%BD%E5%8A%9B/</url>
-    <content><![CDATA[<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在鸿蒙系统跨应用能力调用场景中，需解决以下核心问题：被调用方应用的版本是否满足当前所需功能。例如抖开SDK判断抖音是否支持投稿、授权才真正进行拉起抖音，不然会出现拉起抖音后没有任何反应或者能力缺失。因此目标为实现在SDK侧能判断应用是否支持某能力。</p>
-<h2 id="方案对比（太长不看版）"><a href="#方案对比（太长不看版）" class="headerlink" title="方案对比（太长不看版）"></a>方案对比（太长不看版）</h2><table>
-<thead>
-<tr>
-<th>方案</th>
-<th>实现</th>
-<th>是否可用</th>
-<th>是否启动对方进程</th>
-<th>优点</th>
-<th>缺点</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>metadata 字段读取</td>
-<td>应用 A 在 module.json5 声明能力及版本号，SDK 侧用 bundleManager 读取</td>
-<td>❌</td>
-<td>不会启动</td>
-<td>读取轻量，性能极高，不依赖进程存活；可以随意自定义字段</td>
-<td>三方应用只能查自身包信息，SDK 无法读取其他应用信息</td>
-</tr>
-<tr>
-<td>DataShareExtensionAbility</td>
-<td>应用 A 侧声明并注册扩展能力，SDK 侧创建 DataShareHelper 查询</td>
-<td>❌</td>
-<td>会启动对方的 DataShareExtensionAbility 进程（但不拉 UI）</td>
-<td>跨应用通用，数据可动态更新。如果能力有问题在App侧可以通过settings修改值来避免拉起却不可用的情况。</td>
-<td>第一次调用耗时（冷启动几十~几百 ms）；IPC 大数据效率低；目前仅对系统应用开放，暂不提供相关内容与指导</td>
-</tr>
-<tr>
-<td>使用 canOpenLink 判断应用是否可访问</td>
-<td>调用方在 module.json5 配置 querySchemes 声明 URL scheme，调用 canOpenLink 接口；目标方配置 uris 属性</td>
-<td>✅</td>
-<td>不会启动</td>
-<td>读取轻量，性能极高，不依赖进程存活</td>
-<td>1. 调用方的 querySchemes 最多配置 50 个 URL scheme  2. 每次新增版本号需要在被调用侧新增 schema 的 host。</td>
-</tr>
-</tbody></table>
-<h2 id="方案调研"><a href="#方案调研" class="headerlink" title="方案调研"></a>方案调研</h2><h3 id="metadata字段读取"><a href="#metadata字段读取" class="headerlink" title="metadata字段读取"></a>metadata字段读取</h3><p><strong>实现</strong></p>
-<p>在应用A侧的module.json5 里声明能力及版本号：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;module&quot;: &#123;</span><br><span class="line">    &quot;abilities&quot;: [</span><br><span class="line">      &#123;</span><br><span class="line">        &quot;name&quot;: &quot;MainAbility&quot;,</span><br><span class="line">        &quot;srcEntry&quot;: &quot;./ets/MainAbility.ets&quot;,</span><br><span class="line">        &quot;label&quot;: &quot;AppA&quot;,</span><br><span class="line">        &quot;metadata&quot;: [</span><br><span class="line">          &#123;</span><br><span class="line">            &quot;name&quot;: &quot;bytedance_open_sdk_support&quot;,</span><br><span class="line">            &quot;value&quot;: &quot;1&quot;</span><br><span class="line">          &#125;</span><br><span class="line">        ]</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在SDK侧使用bundleManager 读取字段</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import bundleManager from &#x27;@ohos.bundle.bundleManager&#x27;;</span><br><span class="line"></span><br><span class="line">async function getAppACapabilityVersion(): Promise&lt;string | null&gt; &#123;</span><br><span class="line">  try &#123;</span><br><span class="line">    let bundleInfo = await bundleManager.getBundleInfo(</span><br><span class="line">      &quot;com.example.appA&quot;,  // App A 的包名</span><br><span class="line">      bundleManager.BundleFlag.GET_ABILITY_INFO_WITH_METADATA</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    for (let ability of bundleInfo.abilityInfos) &#123;</span><br><span class="line">      if (ability.metadata) &#123;</span><br><span class="line">        for (let meta of ability.metadata) &#123;</span><br><span class="line">          if (meta.name === &quot;bytedance_open_sdk_support&quot;) &#123;</span><br><span class="line">            console.log(`App A 能力版本号: $&#123;meta.value&#125;`);</span><br><span class="line">            return meta.value; </span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; catch (err) &#123;</span><br><span class="line">    console.error(&quot;读取能力失败: &quot; + JSON.stringify(err));</span><br><span class="line">  &#125;</span><br><span class="line">  return null;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><strong>问题</strong></p>
-<p>三方应用目前只能查询到自身应用包的信息，由于安全隐私，暂时不支持查询其他应用。因此在SDK侧无法通过bundleManager读取其他应用的信息。<br><a href="https://developer.huawei.com/consumer/cn/doc/architecture-guides/insurance-v1_2-ts_34-0000002312854248">https://developer.huawei.com/consumer/cn/doc/architecture-guides/insurance-v1_2-ts_34-0000002312854248</a></p>
-<h3 id="DataShareExtensionAbility"><a href="#DataShareExtensionAbility" class="headerlink" title="DataShareExtensionAbility"></a>DataShareExtensionAbility</h3><p><strong>实现</strong></p>
-<p>在应用A侧声明 DataShareExtensionAbility在 ets&#x2F;CustomDataShare.ets 里：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import dataShare from &#x27;@ohos.data.dataShare&#x27;;</span><br><span class="line">import hilog from &#x27;@ohos.hilog&#x27;;</span><br><span class="line"></span><br><span class="line">const TAG: string = &quot;CustomDataShare&quot;;</span><br><span class="line"></span><br><span class="line">export default class CustomDataShare extends dataShare.DataShareExtensionAbility &#123;</span><br><span class="line">  onCreate(want, callback) &#123;</span><br><span class="line">    hilog.info(0x0000, TAG, &quot;DataShareExtensionAbility onCreate&quot;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  // 处理查询请求</span><br><span class="line">  async query(uri, columns, predicates, callback) &#123;</span><br><span class="line">    hilog.info(0x0000, TAG, `query called. uri=$&#123;uri&#125;`);</span><br><span class="line"></span><br><span class="line">    // 模拟返回一个自定义字段</span><br><span class="line">    let resultSet = &#123;</span><br><span class="line">      columnNames: [&quot;customField&quot;],</span><br><span class="line">      rowCount: 1,</span><br><span class="line">      rowIndex: 0,</span><br><span class="line">      getString: (index) =&gt; &#123;</span><br><span class="line">        if (index === 0) return &quot;HelloFromProviderApp&quot;;</span><br><span class="line">        return &quot;&quot;;</span><br><span class="line">      &#125;,</span><br><span class="line">      goToFirstRow: () =&gt; true,</span><br><span class="line">      close: () =&gt; &#123;&#125;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    callback.onResult(resultSet);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p> 在 module.json5 注册扩展能力<br> <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;extensionAbilities&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;name&quot;: &quot;CustomDataShare&quot;,</span><br><span class="line">      &quot;srcEntry&quot;: &quot;./ets/CustomDataShare.ets&quot;,</span><br><span class="line">      &quot;type&quot;: &quot;dataShare&quot;,</span><br><span class="line">      &quot;uri&quot;: &quot;datashareproxy://com.example.provider&quot; </span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>SDK侧</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">async queryCustomField() &#123;</span><br><span class="line">    try &#123;</span><br><span class="line">      let context = featureAbility.getContext();</span><br><span class="line">      let helper = await dataShare.createDataShareHelper(</span><br><span class="line">        context,</span><br><span class="line">        &quot;datashareproxy://com.example.provider&quot;</span><br><span class="line">      );</span><br><span class="line">      </span><br><span class="line">      let resultSet = await helper.query(</span><br><span class="line">        &#123; uri: &quot;datashareproxy://com.example.provider/customField&quot; &#125;,</span><br><span class="line">        [&quot;customField&quot;],</span><br><span class="line">        null</span><br><span class="line">      );</span><br><span class="line"></span><br><span class="line">      if (resultSet.goToFirstRow()) &#123;</span><br><span class="line">        this.message = resultSet.getString(0);</span><br><span class="line">      &#125;</span><br><span class="line">      resultSet.close();</span><br><span class="line">    &#125; catch (err) &#123;</span><br><span class="line">      hilog.error(0x0000, TAG, &quot;query error: &quot; + JSON.stringify(err));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-
-<p><strong>问题</strong></p>
-<p>使用DataShareExtensionAbility实现数据共享：目前仅对系统应用开放，暂不具体展开提供相关内容和指导。<br><a href="https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/data-share-overview">https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/data-share-overview</a></p>
-<h3 id="canOpenLink-判断应用是否可访问"><a href="#canOpenLink-判断应用是否可访问" class="headerlink" title="canOpenLink 判断应用是否可访问"></a>canOpenLink 判断应用是否可访问</h3><p><strong>实现</strong></p>
-<p>参考文档：<a href="https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/canopenlink">https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/canopenlink</a></p>
-<p>调用方（SDK）：</p>
-<ol>
-<li>在 entry 模块的 module.json5 文件中配置 querySchemes 属性，声明想要查询的 URL scheme。</li>
-</ol>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;module&quot;: &#123;</span><br><span class="line">    //...</span><br><span class="line">    &quot;querySchemes&quot;: [</span><br><span class="line">      &quot;app1Scheme&quot;</span><br><span class="line">    ]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>调用 canOpenLink 接口：<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">import &#123; bundleManager &#125; from &#x27;@kit.AbilityKit&#x27;;</span><br><span class="line">import &#123; BusinessError &#125; from &#x27;@kit.BasicServicesKit&#x27;;</span><br><span class="line">import &#123; hilog &#125; from &#x27;@kit.PerformanceAnalysisKit&#x27;;</span><br><span class="line">try &#123;</span><br><span class="line">  let link = &#x27;app1Scheme://test.example.com/home&#x27;;</span><br><span class="line">  let canOpen = bundleManager.canOpenLink(link);</span><br><span class="line">  hilog.info(0x0000, &#x27;testTag&#x27;, &#x27;canOpenLink successfully: %&#123;public&#125;s&#x27;, JSON.stringify(canOpen));</span><br><span class="line">&#125; catch (err) &#123;</span><br><span class="line">  let message = (err as BusinessError).message;</span><br><span class="line">  hilog.error(0x0000, &#x27;testTag&#x27;, &#x27;canOpenLink failed: %&#123;public&#125;s&#x27;, message);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-</ol>
-<p>目标方：<br>在 module.json5 文件中配置 uris 属性。</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;module&quot;: &#123;</span><br><span class="line">    //...</span><br><span class="line">    &quot;abilities&quot;: [</span><br><span class="line">      &#123;</span><br><span class="line">        //...</span><br><span class="line">        &quot;skills&quot;: [</span><br><span class="line">          &#123;</span><br><span class="line">            // actions不能为空，actions为空会造成目标方匹配失败</span><br><span class="line">            &quot;actions&quot;: [&quot;ohos.want.action.home&quot;],</span><br><span class="line">            &quot;uris&quot;: [</span><br><span class="line">              &#123;</span><br><span class="line">                &quot;scheme&quot;: &quot;app1Scheme&quot;,</span><br><span class="line">                &quot;host&quot;: &quot;test.example.com&quot;,</span><br><span class="line">                &quot;pathStartWith&quot;: &quot;home&quot;</span><br><span class="line">              &#125;</span><br><span class="line">            ]</span><br><span class="line">          &#125;</span><br><span class="line">        ]</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">  &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><strong>问题</strong></p>
-<p>querySchemes 中最多允许配置 50 个 URL scheme。因此限制不能无限使用新的 schema 头，但整体方案是可行的。</p>
-]]></content>
-      <tags>
-        <tag>鸿蒙</tag>
       </tags>
   </entry>
 </search>
